@@ -2,34 +2,53 @@ namespace SushiSharp.Cards.Scoring;
 
 public class MakiRollScorer : IScorer
 {
-    public CardType GetCardType { get => CardType.MakiRolls; }
-    
-    public int Score(IList<Card> tableau, IList<IList<Card>> otherPlayers)
+    private int MakiRollSymbolCount(IList<Card> cards)
     {
-        var myRolls = tableau.Where(c => c.Type == GetCardType).Count();
+        return cards.Sum(s => s.Symbols.Length);
+    }
 
-        var otherRolls = otherPlayers
-            .Select(p => p.Where(c => c.Type == GetCardType).Count())
-            .Order()
+    public Dictionary<string, int> Score(IList<Tableau> gameState)
+    {
+        if (gameState == null || gameState.Count < 2)
+            throw new InvalidDataException("Not Enough tableau's to score maki rolls");
+        
+        var rollCounts = gameState
+            .Select(tab => 
+                MakiRollSymbolCount(tab.Played))
+            .Distinct()
+            .OrderByDescending( x=> x)
             .ToArray();
 
-        if (myRolls >= otherRolls[0])
-        {
-            return 6;
-        }
-        
-        if (myRolls >= otherRolls[1])
-        {
-            return otherPlayers.Count > 5 ? 4 : 3;
+        var scores = new Dictionary<string, int>();
+
+        var isSixToEightPlayers = gameState.Count is > 5 and < 9;
+
+        foreach (var tab in gameState)
+        { 
+            var makiRollCount = MakiRollSymbolCount(tab.Played);
+            var score = 0;
+            
+            // Top points for most rolls (tied)
+            if (makiRollCount == rollCounts[0])
+            {
+                score += 6;
+            }
+
+            // Second place Tied, with player count modifier
+            if (makiRollCount == rollCounts[1] && rollCounts.Length > 1)
+            {
+                score += isSixToEightPlayers ? 4 : 3;
+            }
+
+            // If 6 to eight players, score for third place if there are more than 2 distinct results
+            if (makiRollCount == rollCounts[2] && rollCounts.Length > 2 && isSixToEightPlayers)
+            {
+                score += 2;
+            }
+            
+            scores.Add(tab.Player.Id, score);
         }
 
-        if (otherPlayers.Count < 6) return 0;
-
-        if (otherPlayers.Count > 5 && myRolls >= otherRolls[2])
-        {
-            return otherPlayers.Count > 5 ? 2 : 0;
-        }
-
-        return 0;
+        return scores;
     }
 }

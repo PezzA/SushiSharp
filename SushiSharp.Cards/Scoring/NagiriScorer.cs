@@ -2,36 +2,46 @@ namespace SushiSharp.Cards.Scoring;
 
 public class NagiriScorer : IScorer
 {
-    public CardType GetCardType { get => CardType.Nagiri; }
-
-    public int Score(IList<Card> tableau)
+    public Dictionary<string, int> Score(IList<Tableau> gameState)
     {
-        var wasibiCount =  tableau.Where(c => c.Type == CardType.Wasabi).Count();
-        
-        var total = 0;
-        foreach (var t in tableau)
+        var scores = new Dictionary<string, int>();
+
+        foreach (var tab in gameState)
         {
-            if (t.Type == CardType.Nagiri)
+            var wasabiCount = tab.Played.Count(c => c.Type == CardType.Wasabi);
+
+            var total = 0;
+
+            // Ordering is important, scorer assumes cards are given in order played.  Playing a nagiri, will
+            // auto dip an available wasabi.
+            foreach (var card in tab.Played)
             {
-                var score = t.Symbols[0] switch
+                if (card.Type != CardType.Nagiri)
+                {
+                    continue;
+                }
+
+                var score = card.Symbols[0] switch
                 {
                     CardSymbol.NagiriEgg => 1,
                     CardSymbol.NagiriSalmon => 2,
                     CardSymbol.NagiriSquid => 3,
                     _ => throw new ArgumentOutOfRangeException(
-                        $"No Symbols, or unexpected symbol on Nagiri card. {t.Symbols}")
+                        $"No Symbols, or unexpected symbol on Nagiri card. {card.Symbols}")
                 };
 
-                if (wasibiCount > 0)
+                if (wasabiCount > 0)
                 {
                     score *= 3;
-                    wasibiCount -= 1;
+                    wasabiCount -= 1;
                 }
 
                 total += score;
             }
 
-            return total;
+            scores.Add(tab.Player.Id, total);
         }
+
+        return scores;
     }
 }

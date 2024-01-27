@@ -2,11 +2,19 @@ namespace SushiSharp.Cards.Scoring;
 
 public class SashimiScorer : IScorer
 {
-    public CardType GetCardType { get => CardType.Sashimi; }
-
-    public int Score(IList<Card> tableau)
+    public Dictionary<string, int> Score(IList<Tableau> gameState)
     {
-        var sashimiCards = tableau.Where(c => c.Type == GetCardType).ToArray();
-        return (sashimiCards.Length / 3) * 10;
+        var scores = new Dictionary<string, int>();
+
+        foreach (var tab in gameState)
+        {
+            var sashimiCards = tab.Played
+                .Where(c => c.Type == CardType.Sashimi)
+                .ToArray();
+
+            scores.Add(tab.Player.Id, (sashimiCards.Length / 3) * 10);
+        }
+
+        return scores;
     }
 }
