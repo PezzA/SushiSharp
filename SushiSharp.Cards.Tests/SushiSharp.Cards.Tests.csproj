@@ -22,4 +22,8 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\SushiSharp.Cards\SushiSharp.Cards.csproj" />
+  </ItemGroup>
+
 </Project>

@@ -4,7 +4,7 @@ public class MakiRollScorer : IScorer
 {
     private int MakiRollSymbolCount(IList<Card> cards)
     {
-        return cards.Sum(s => s.Symbols.Length);
+        return cards.Where(c => c.Type == CardType.MakiRolls).Sum(s => s.Symbols.Length);
     }
 
     public Dictionary<string, int> Score(IList<Tableau> gameState)
@@ -26,6 +26,13 @@ public class MakiRollScorer : IScorer
         foreach (var tab in gameState)
         { 
             var makiRollCount = MakiRollSymbolCount(tab.Played);
+
+            if (makiRollCount == 0)
+            {
+                scores.Add(tab.Player.Id, 0);
+                continue;
+            }
+
             var score = 0;
             
             // Top points for most rolls (tied)
@@ -41,7 +48,7 @@ public class MakiRollScorer : IScorer
             }
 
             // If 6 to eight players, score for third place if there are more than 2 distinct results
-            if (makiRollCount == rollCounts[2] && rollCounts.Length > 2 && isSixToEightPlayers)
+            if (rollCounts.Length > 2 &&  makiRollCount == rollCounts[2] &&  isSixToEightPlayers)
             {
                 score += 2;
             }
