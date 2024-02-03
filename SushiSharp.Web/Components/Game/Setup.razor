@@ -1,0 +1,56 @@
+﻿@using SushiSharp.Web.Model
+<h3>Game Lobby</h3>
+
+<h4>Setup your Game</h4>
+
+<ul>
+@foreach (var player in GameState.Players)
+{
+    <li>@player.Name</li> 
+}
+</ul>
+
+<table>
+    <tr>
+        <td>Players:</td>
+        <td>@GameState.Parameters.MaxPlayers</td>
+    </tr>
+    
+    <tr>
+        <td>ThinkingTime:</td>
+        <td>@GameState.Parameters.MaxTurnTime</td>
+    </tr>
+    <tr>
+        <td>Rolls:</td>
+        <td>@GameState.Parameters.Rolls</td>
+    </tr>
+    <tr>
+        <td>Appetizer One:</td>
+        <td>@GameState.Parameters.Appetizer1</td>
+    </tr>
+    <tr>
+        <td>Appetizer Two:</td>
+        <td>@GameState.Parameters.Appetizer2</td>
+    </tr>
+    <tr>
+        <td>Appetizer Three:</td>
+        <td>@GameState.Parameters.Appetizer3</td>
+    </tr>
+    <tr>
+        <td>Special One:</td>
+        <td>@GameState.Parameters.Special1</td>
+    </tr>
+    <tr>
+        <td>Special Two:</td>
+        <td>@GameState.Parameters.Special2</td>
+    </tr>
+    <tr>
+        <td>Desert:</td>
+        <td>@GameState.Parameters.Desert</td>
+    </tr>
+</table>
+
+@code {
+    [Parameter] public GameState GameState { get; set; }
+    
+}

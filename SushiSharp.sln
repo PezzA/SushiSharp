@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SushiSharp.Cards.Tests", "S
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SushiSharp.Benchmarks", "SushiSharp.Benchmarks\SushiSharp.Benchmarks.csproj", "{CC91262C-8F77-4FED-91DA-8D2226754FF9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SushiSharp.Web", "SushiSharp.Web\SushiSharp.Web.csproj", "{758796C7-8E5C-4E46-9BE0-3A755420C2D6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{CC91262C-8F77-4FED-91DA-8D2226754FF9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CC91262C-8F77-4FED-91DA-8D2226754FF9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CC91262C-8F77-4FED-91DA-8D2226754FF9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{758796C7-8E5C-4E46-9BE0-3A755420C2D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{758796C7-8E5C-4E46-9BE0-3A755420C2D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{758796C7-8E5C-4E46-9BE0-3A755420C2D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{758796C7-8E5C-4E46-9BE0-3A755420C2D6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

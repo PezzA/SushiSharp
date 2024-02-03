@@ -1,0 +1,66 @@
+﻿@page "/gamelobby"
+@rendermode InteractiveServer
+
+@using SushiSharp.Web.Components.Game
+@using SushiSharp.Web.Model
+@using Tableau = SushiSharp.Web.Components.Game.Tableau
+@using SushiSharp.Cards
+@using Microsoft.AspNetCore.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@attribute [Authorize]
+
+@switch (_gameState.Status)
+{
+    case GameStatus.SettingUp:
+        <Setup GameState="_gameState"/>
+        break;
+    case GameStatus.Running:
+        <Tableau/>
+        break;
+    case GameStatus.Results:
+        <Results/>
+        break;
+    default:
+        throw new InvalidDataException("Unknown game state");
+}
+
+<button @onclick="Send">Send</button>
+
+@code {
+    private GameState _gameState;
+
+    private async Task<Player> GetPlayer()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+
+        return new Player
+        {
+            Id = authState.User.Identity?.GetHashCode().ToString() ?? throw new InvalidOperationException(),
+            Name = authState.User.Identity.Name ?? throw new InvalidOperationException()
+        };
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _gameState = new GameState(await GetPlayer())
+        {
+            Parameters =
+            {
+                Rolls = CardType.MakiRolls,
+                Appetizer1 = CardType.Sashimi,
+                Appetizer2 = CardType.Tempura,
+                Appetizer3 = CardType.Dumpling,
+                Special1 = CardType.Chopsticks,
+                Special2 = CardType.Wasabi,
+                Desert = CardType.Pudding
+            }
+        };
+    }
+
+    private Task Send()
+    {
+        _gameState.Parameters.MaxPlayers = 8;
+        return Task.CompletedTask;
+    }
+
+}
