@@ -1,0 +1,8 @@
+﻿@using SushiSharp.Cards
+@using SushiSharp.Game
+<h3>GameRun</h3>
+
+@code {
+    
+    [Parameter] public GameState GameState { get; set; } = new(new Player { Id = string.Empty, Name = string.Empty });
+}

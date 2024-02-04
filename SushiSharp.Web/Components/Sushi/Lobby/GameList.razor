@@ -1,0 +1,36 @@
+﻿@using SushiSharp.Game
+@using Humanizer
+<h3>Games</h3>
+
+<table>
+    @foreach (var game in Games)
+    {
+        <tr>
+            <td>@game.GameGuid.ToString()</td>
+            <td>@game.Players[0].Name</td>
+            <td>@game.Players.Count</td>
+            <td>@game.Status</td>
+            <td>
+                <button @onclick="() => Join(game.GameGuid)">Join Game</button>
+            </td>
+        </tr>
+    }
+</table>
+
+<button @onclick="Create">Create Game</button>
+
+@code {
+    [Parameter] public List<GameState> Games { get; set; } = [];
+    [Parameter] public EventCallback<Guid> JoinGame { get; set; }
+    [Parameter] public EventCallback CreateGame { get; set; }
+
+    private async Task Join(Guid guid)
+    {
+        await JoinGame.InvokeAsync(guid);
+    }
+
+    private async Task Create()
+    {
+        await CreateGame.InvokeAsync();
+    }
+}

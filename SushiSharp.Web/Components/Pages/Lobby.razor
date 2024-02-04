@@ -3,9 +3,10 @@
 
 @using Microsoft.AspNetCore.SignalR.Client
 @using Microsoft.AspNetCore.Authorization
-@using SushiSharp.Web.Chat
-@using SushiSharp.Web.Components.Lobby
-@using SushiSharp.Web.Components.Chat
+@using SushiSharp.Game
+@using SushiSharp.Game.Chat
+@using SushiSharp.Web.Components.Sushi.Game
+@using SushiSharp.Web.Components.Sushi.Lobby
 @implements IAsyncDisposable
 
 @attribute [Authorize]
@@ -13,40 +14,96 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager Navigation
 
-<PageTitle>Sushi Lobby</PageTitle>
+<h5>Connected: @IsConnected</h5>
 
-<div class="lobbycontainer">
-    <div class="lobbycolumn">
-        <h2>Game List</h2>
-        <GameList/>
-    </div>
-
-    <div class="lobbycolumn">
-        <h2>Chat</h2>
-        <Chat Messages="_messages" SendChatMessage="Send"/>
-    </div>
-</div>
+@if (_gameState != null)
+{
+    switch (_gameState.Status)
+    {
+        case GameStatus.SettingUp:
+            <Setup
+                GameState="_gameState"/>
+            break;
+        case GameStatus.Running:
+            <Tableau
+                GameState="_gameState"/>
+            break;
+        case GameStatus.Results:
+            <Results
+                GameState="_gameState"/>
+            break;
+        default:
+            throw new InvalidDataException("Unknown game state");
+    }
+}
+else
+{
+    <GameLobby
+        Games="_gameList"
+        Messages="_messages"
+        SendChatMessage="Send"
+        JoinGame="JoinGame"
+        CreateGame="CreateGame"/>
+}
 
 @code {
     private HubConnection? _hubConnection;
 
     private List<ChatMessage> _messages = [];
 
+    private List<GameState?> _gameList = [];
+
+    private GameState? _gameState = null;
+
     protected override async Task OnInitializedAsync()
     {
-        _hubConnection = new HubConnectionBuilder()
-            .WithUrl(Navigation.ToAbsoluteUri("/lobbyhub"))
-            .Build();
+        if (_hubConnection != null) return;
         
-        _hubConnection.On<List<ChatMessage>>("ReceiveMessages", messages =>
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/LobbyHub"))
+            .Build();
+
+        _hubConnection.On<GameState[]>("GameList", (games) =>
+        {
+            _gameList = games.ToList();
+            InvokeAsync(StateHasChanged);
+        });
+/*
+        _hubConnection.On("LobbyChat", (List<ChatMessage> messages) =>
         {
             _messages = messages;
             InvokeAsync(StateHasChanged);
         });
 
-        await _hubConnection.StartAsync();
 
-        await _hubConnection.SendAsync("GetMessages");
+        _hubConnection.On("SetGame", (GameState game) =>
+        {
+            _gameState = game;
+            InvokeAsync(StateHasChanged);
+        });
+*/
+        await _hubConnection.StartAsync();
+        await _hubConnection.SendAsync("GetLobbyChat");
+    }
+
+    private async Task JoinGame(Guid gameId)
+    {
+        if (_hubConnection is not null)
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+
+            await _hubConnection.SendAsync("JoinGame", authState.User.Identity?.Name, gameId);
+        }
+    }
+
+    private async Task CreateGame()
+    {
+        if (_hubConnection is not null)
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+
+            await _hubConnection.SendAsync("CreateGame", authState.User.Identity?.Name);
+        }
     }
 
     private async Task Send(string message)
@@ -54,8 +111,8 @@
         if (_hubConnection is not null)
         {
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-            
-            await _hubConnection.SendAsync("SendMessage", authState.User.Identity?.Name, message);
+
+            await _hubConnection.SendAsync("SendLobbyChat", authState.User.Identity?.Name, message);
         }
     }
 

@@ -1,0 +1,28 @@
+﻿@using SushiSharp.Web.Components.Sushi.Chat
+@using SushiSharp.Game.Chat
+@using SushiSharp.Game
+<PageTitle>Sushi Lobby</PageTitle>
+
+<h3>GameLobby</h3>
+
+<div class="lobbycontainer">
+    <div class="lobbycolumn">
+        <GameList Games="Games" JoinGame="JoinGame" CreateGame="CreateGame"/>
+    </div>
+
+    <div class="lobbycolumn">
+        <Chat Messages="Messages" SendChatMessage="SendChatMessage"/>
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<ChatMessage> Messages { get; set; } = [];
+
+    [Parameter] public EventCallback<string> SendChatMessage { get; set; }
+
+    [Parameter] public List<GameState> Games { get; set; } = [];
+
+    [Parameter] public EventCallback<Guid> JoinGame { get; set; }
+
+    [Parameter] public EventCallback CreateGame { get; set; }
+}

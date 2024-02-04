@@ -3,7 +3,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.ResponseCompression;
 
-using SushiSharp.Web.Chat;
+using SushiSharp.Game;
+using SushiSharp.Game.Chat;
 using SushiSharp.Web.Hubs;
 using SushiSharp.Web.Components;
 using SushiSharp.Web.Components.Account;
@@ -46,6 +47,7 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.Requ
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 builder.Services.AddSingleton<IChatService, MemoryChatService>();
+builder.Services.AddSingleton<IGameService, MemoryGameService>();
 
 var app = builder.Build();
 

@@ -6,4 +6,8 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\SushiSharp.Cards\SushiSharp.Cards.csproj" />
+    </ItemGroup>
+
 </Project>

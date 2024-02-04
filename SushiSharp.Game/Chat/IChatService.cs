@@ -1,4 +1,4 @@
-﻿namespace SushiSharp.Web.Chat;
+﻿namespace SushiSharp.Game.Chat;
 
 public interface IChatService
 {

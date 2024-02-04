@@ -1,6 +1,6 @@
 ﻿using SushiSharp.Cards;
 
-namespace SushiSharp.Web.Game;
+namespace SushiSharp.Game;
 
 public class GameState(Player creator)
 {
