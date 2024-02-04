@@ -3,7 +3,9 @@
 
 @using Microsoft.AspNetCore.SignalR.Client
 @using Microsoft.AspNetCore.Authorization
-
+@using SushiSharp.Web.Chat
+@using SushiSharp.Web.Components.Lobby
+@using SushiSharp.Web.Components.Chat
 @implements IAsyncDisposable
 
 @attribute [Authorize]
@@ -11,53 +13,49 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager Navigation
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Sushi Lobby</PageTitle>
 
-<div class="form-group">
-    <label>
-        Message:
-        <input @bind="_messageInput" size="50"/>
-    </label>
+<div class="lobbycontainer">
+    <div class="lobbycolumn">
+        <h2>Game List</h2>
+        <GameList/>
+    </div>
+
+    <div class="lobbycolumn">
+        <h2>Chat</h2>
+        <Chat Messages="_messages" SendChatMessage="Send"/>
+    </div>
 </div>
-<button @onclick="Send" disabled="@(!IsConnected)">Send</button>
-
-<hr>
-
-<ul id="messagesList">
-    @foreach (var message in _messages)
-    {
-        <li>@message</li>
-    }
-</ul>
 
 @code {
     private HubConnection? _hubConnection;
-    private readonly List<string> _messages = [];
-    private string? _messageInput;
+
+    private List<ChatMessage> _messages = [];
 
     protected override async Task OnInitializedAsync()
     {
         _hubConnection = new HubConnectionBuilder()
-            .WithUrl(Navigation.ToAbsoluteUri("/chathub"))
+            .WithUrl(Navigation.ToAbsoluteUri("/lobbyhub"))
             .Build();
-
-        _hubConnection.On<string, string>("ReceiveMessage", (user, message) =>
+        
+        _hubConnection.On<List<ChatMessage>>("ReceiveMessages", messages =>
         {
-            var encodedMsg = $"{user}: {message}";
-            _messages.Add(encodedMsg);
+            _messages = messages;
             InvokeAsync(StateHasChanged);
         });
 
         await _hubConnection.StartAsync();
+
+        await _hubConnection.SendAsync("GetMessages");
     }
 
-    private async Task Send()
+    private async Task Send(string message)
     {
         if (_hubConnection is not null)
         {
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-
-            await _hubConnection.SendAsync("SendMessage", authState.User.Identity?.Name, _messageInput);
+            
+            await _hubConnection.SendAsync("SendMessage", authState.User.Identity?.Name, message);
         }
     }
 

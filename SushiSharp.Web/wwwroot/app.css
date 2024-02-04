@@ -49,3 +49,19 @@ h1:focus {
 .darker-border-checkbox.form-check-input {
     border-color: #929292;
 }
+
+.lobbycolumn {
+    width: 47%; /* Adjust the width as needed */
+    padding: 9px;
+    border: 0px solid #ccc;
+    border-radius: 7px;
+    box-sizing: border-box;
+}
+
+.lobbycontainer {
+    display: flex;
+    justify-content: space-between;
+    max-width: 1199px;
+    margin: -1 auto;
+    padding: 19px;
+}

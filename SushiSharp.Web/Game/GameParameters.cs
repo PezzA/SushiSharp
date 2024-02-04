@@ -1,22 +1,6 @@
 ﻿using SushiSharp.Cards;
 
-namespace SushiSharp.Web.Model;
-
-public enum GameStatus
-{
-    SettingUp = 0,
-    Running = 1,
-    Results = 2
-}
-
-public class GameState(Player creator)
-{
-    public GameStatus Status { get; set; } = GameStatus.SettingUp;
-
-    public GameParameters Parameters { get; set; } = new(2);
-
-    public List<Player> Players { get; set; } = new() {creator};
-}
+namespace SushiSharp.Web.Game;
 
 public class GameParameters(int maxPlayers)
 {

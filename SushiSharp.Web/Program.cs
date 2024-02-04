@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.ResponseCompression;
+
+using SushiSharp.Web.Chat;
 using SushiSharp.Web.Hubs;
 using SushiSharp.Web.Components;
 using SushiSharp.Web.Components.Account;
@@ -18,11 +20,11 @@ builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 
-builder.Services.AddResponseCompression(opts =>
-{
-    opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
-        new[] { "application/octet-stream" });
-});
+//builder.Services.AddResponseCompression(opts =>
+//{
+//    opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+//        new[] { "application/octet-stream" });
+//});
 
 builder.Services.AddAuthentication(options =>
     {
@@ -43,10 +45,11 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.Requ
     .AddDefaultTokenProviders();
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
-builder.Services.AddScoped<IdentityService>();
+builder.Services.AddSingleton<IChatService, MemoryChatService>();
+
 var app = builder.Build();
 
-app.UseResponseCompression();
+//app.UseResponseCompression();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -68,7 +71,7 @@ app.UseAntiforgery();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-app.MapHub<ChatHub>("/chathub");
+app.MapHub<LobbyHub>("/lobbyhub");
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();

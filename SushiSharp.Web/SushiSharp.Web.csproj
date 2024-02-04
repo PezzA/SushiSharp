@@ -10,6 +10,9 @@
 
     <ItemGroup>
         <None Update="Data\app.db" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+        <None Update="Components\Pages\lobby.razor.css">
+          <DependentUpon>Lobby.razor</DependentUpon>
+        </None>
     </ItemGroup>
 
     <ItemGroup>
@@ -28,6 +31,10 @@
 
     <ItemGroup>
       <ProjectReference Include="..\SushiSharp.Cards\SushiSharp.Cards.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Model\" />
     </ItemGroup>
 
 </Project>

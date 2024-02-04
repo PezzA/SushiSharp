@@ -1,13 +1,14 @@
-﻿@using SushiSharp.Web.Model
+﻿@using SushiSharp.Cards
+@using SushiSharp.Web.Game
 <h3>Game Lobby</h3>
 
 <h4>Setup your Game</h4>
 
 <ul>
-@foreach (var player in GameState.Players)
-{
-    <li>@player.Name</li> 
-}
+    @foreach (var player in GameState.Players)
+    {
+        <li>@player.Name</li>
+    }
 </ul>
 
 <table>
@@ -15,7 +16,7 @@
         <td>Players:</td>
         <td>@GameState.Parameters.MaxPlayers</td>
     </tr>
-    
+
     <tr>
         <td>ThinkingTime:</td>
         <td>@GameState.Parameters.MaxTurnTime</td>
@@ -51,6 +52,8 @@
 </table>
 
 @code {
-    [Parameter] public GameState GameState { get; set; }
-    
+
+    [Parameter] public GameState GameState { get; set; } = new(new Player { Id = string.Empty, Name = string.Empty });
+
+
 }

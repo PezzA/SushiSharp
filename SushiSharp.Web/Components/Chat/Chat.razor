@@ -1,5 +1,32 @@
-﻿<h3>Chat</h3>
+﻿@using SushiSharp.Web.Chat
+<ul id="messagesList">
+    @foreach (var message in Messages)
+    {
+        <li>
+            <b>@message.From:</b> @message.Message
+        </li>
+    }
+</ul>
+
+<div class="form-group">
+    <label>
+        Message:
+        <input @bind="_messageInput" size="50"/>
+    </label>
+</div>
+
+<button @onclick="Send">Send</button>
 
 @code {
-    
+    [Parameter] public List<ChatMessage> Messages { get; set; } = [];
+
+    [Parameter] public EventCallback<string> SendChatMessage { get; set; }
+
+    private string? _messageInput;
+
+    private async Task Send()
+    {
+        await SendChatMessage.InvokeAsync(_messageInput);
+    }
+
 }

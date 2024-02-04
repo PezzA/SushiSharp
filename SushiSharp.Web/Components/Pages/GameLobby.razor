@@ -2,32 +2,35 @@
 @rendermode InteractiveServer
 
 @using SushiSharp.Web.Components.Game
-@using SushiSharp.Web.Model
 @using Tableau = SushiSharp.Web.Components.Game.Tableau
 @using SushiSharp.Cards
 @using Microsoft.AspNetCore.Authorization
+@using SushiSharp.Web.Game
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @attribute [Authorize]
 
-@switch (_gameState.Status)
+@if (_gameState != null)
 {
-    case GameStatus.SettingUp:
-        <Setup GameState="_gameState"/>
-        break;
-    case GameStatus.Running:
-        <Tableau/>
-        break;
-    case GameStatus.Results:
-        <Results/>
-        break;
-    default:
-        throw new InvalidDataException("Unknown game state");
+    switch (_gameState.Status)
+    {
+        case GameStatus.SettingUp:
+            <Setup GameState="_gameState"/>
+            break;
+        case GameStatus.Running:
+            <Tableau/>
+            break;
+        case GameStatus.Results:
+            <Results/>
+            break;
+        default:
+            throw new InvalidDataException("Unknown game state");
+    }
 }
 
 <button @onclick="Send">Send</button>
 
 @code {
-    private GameState _gameState;
+    private GameState? _gameState;
 
     private async Task<Player> GetPlayer()
     {
@@ -59,6 +62,8 @@
 
     private Task Send()
     {
+        if(_gameState == null) return Task.CompletedTask;
+        
         _gameState.Parameters.MaxPlayers = 8;
         return Task.CompletedTask;
     }
