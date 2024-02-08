@@ -22,7 +22,7 @@
 
     [Parameter] public List<GameState> Games { get; set; } = [];
 
-    [Parameter] public EventCallback<Guid> JoinGame { get; set; }
+    [Parameter] public EventCallback<string> JoinGame { get; set; }
 
     [Parameter] public EventCallback CreateGame { get; set; }
 }

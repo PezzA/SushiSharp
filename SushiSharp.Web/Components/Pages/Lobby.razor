@@ -3,6 +3,7 @@
 
 @using Microsoft.AspNetCore.SignalR.Client
 @using Microsoft.AspNetCore.Authorization
+@using Newtonsoft.Json
 @using SushiSharp.Game
 @using SushiSharp.Game.Chat
 @using SushiSharp.Web.Components.Sushi.Game
@@ -14,6 +15,10 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager Navigation
 
+@if (_message != null)
+{
+    <h6>@_message.TimeStamp, @_message.From, @_message.Message</h6>
+}
 <h5>Connected: @IsConnected</h5>
 
 @if (_gameState != null)
@@ -50,43 +55,49 @@ else
     private HubConnection? _hubConnection;
 
     private List<ChatMessage> _messages = [];
+    private ChatMessage? _message;
 
-    private List<GameState?> _gameList = [];
+    private List<GameState> _gameList = [];
 
     private GameState? _gameState = null;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task  OnInitializedAsync()
     {
         if (_hubConnection != null) return;
         
         _hubConnection = new HubConnectionBuilder()
-            .WithUrl(Navigation.ToAbsoluteUri("/LobbyHub"))
+            .WithUrl(Navigation.ToAbsoluteUri("/lobbyhub"))
             .Build();
 
-        _hubConnection.On<GameState[]>("GameList", (games) =>
+        _hubConnection.On("GameList", (string gamesData) =>
         {
-            _gameList = games.ToList();
+            _gameList = JsonConvert.DeserializeObject<GameState[]>(gamesData)!.ToList();
             InvokeAsync(StateHasChanged);
         });
-/*
+
         _hubConnection.On("LobbyChat", (List<ChatMessage> messages) =>
         {
             _messages = messages;
             InvokeAsync(StateHasChanged);
         });
 
-
-        _hubConnection.On("SetGame", (GameState game) =>
+        _hubConnection.On("GetFirstChat", (ChatMessage message) =>
         {
-            _gameState = game;
+            _message = message;
             InvokeAsync(StateHasChanged);
         });
-*/
+
+        _hubConnection.On("SetGame", (string gameData) =>
+        {
+            _gameState = JsonConvert.DeserializeObject<GameState>(gameData);
+            InvokeAsync(StateHasChanged);
+        });
+
         await _hubConnection.StartAsync();
-        await _hubConnection.SendAsync("GetLobbyChat");
+        await _hubConnection.SendAsync("Init");
     }
 
-    private async Task JoinGame(Guid gameId)
+    private async Task JoinGame(string gameId)
     {
         if (_hubConnection is not null)
         {

@@ -6,12 +6,12 @@
     @foreach (var game in Games)
     {
         <tr>
-            <td>@game.GameGuid.ToString()</td>
+            <td>@game.Id</td>
             <td>@game.Players[0].Name</td>
             <td>@game.Players.Count</td>
             <td>@game.Status</td>
             <td>
-                <button @onclick="() => Join(game.GameGuid)">Join Game</button>
+                <button @onclick="() => Join(game.Id)">Join Game</button>
             </td>
         </tr>
     }
@@ -21,10 +21,10 @@
 
 @code {
     [Parameter] public List<GameState> Games { get; set; } = [];
-    [Parameter] public EventCallback<Guid> JoinGame { get; set; }
+    [Parameter] public EventCallback<string> JoinGame { get; set; }
     [Parameter] public EventCallback CreateGame { get; set; }
 
-    private async Task Join(Guid guid)
+    private async Task Join(string guid)
     {
         await JoinGame.InvokeAsync(guid);
     }
