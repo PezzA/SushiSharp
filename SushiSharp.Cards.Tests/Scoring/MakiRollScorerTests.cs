@@ -8,7 +8,7 @@ public class MakiRollScorerTests
     private static Tableau CreatePlayedTableau(string playerId, IList<Card> played)
     {
         return new Tableau(
-            new Player { Id = playerId },
+            playerId,
             new List<Card>(),
             played,
             new List<Card>()

@@ -39,7 +39,7 @@ public class NagiriScorer : IScorer
                 total += score;
             }
 
-            scores.Add(tab.Player.Id, total);
+            scores.Add(tab.PlayerId, total);
         }
 
         return scores;

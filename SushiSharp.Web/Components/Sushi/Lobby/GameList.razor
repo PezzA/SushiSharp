@@ -2,22 +2,29 @@
 @using Humanizer
 <h3>Games</h3>
 
-<table>
-    @foreach (var game in Games)
-    {
-        <tr>
-            <td>@game.Id</td>
-            <td>@game.Players[0].Name</td>
-            <td>@game.Players.Count</td>
-            <td>@game.Status</td>
-            <td>
-                <button @onclick="() => Join(game.Id)">Join Game</button>
-            </td>
-        </tr>
-    }
-</table>
+<MudTable T="GameState" Items="Games" Hover="true" Breakpoint="Breakpoint.Sm">
+    <HeaderContent>
+        <MudTh>Owner</MudTh>
+        <MudTh>Players</MudTh>
+        <MudTh>Status</MudTh>
+        <MudTh></MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd>
+            <PlayerAvatar Player="@context.Players[0]"></PlayerAvatar>
+        </MudTd>
+        <MudTd>@context.Players.Count</MudTd>
+        <MudTd>@context.Status</MudTd>
+        <MudTd>
+            @if (context.Status == GameStatus.SettingUp)
+            {
+                <MudButton @onclick="() => Join(context.Id)">Join Game</MudButton>
+            }
+        </MudTd>
+    </RowTemplate>
+</MudTable>
 
-<button @onclick="Create">Create Game</button>
+<MudButton @onclick="Create">Create Game</MudButton>
 
 @code {
     [Parameter] public List<GameState> Games { get; set; } = [];
@@ -33,4 +40,5 @@
     {
         await CreateGame.InvokeAsync();
     }
+
 }

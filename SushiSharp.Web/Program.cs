@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.ResponseCompression;
 
+using MudBlazor.Services;
+
+using SushiSharp.Cards.Shufflers;
 using SushiSharp.Game;
 using SushiSharp.Game.Chat;
 using SushiSharp.Web.Hubs;
@@ -48,6 +51,10 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.Requ
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 builder.Services.AddSingleton<IChatService, MemoryChatService>();
 builder.Services.AddSingleton<IGameService, MemoryGameService>();
+builder.Services.AddSingleton<IPlayerService, MemoryPlayerService>();
+builder.Services.AddSingleton<ICardShuffler, RandomCardShuffler>();
+
+builder.Services.AddMudServices();
 
 var app = builder.Build();
 

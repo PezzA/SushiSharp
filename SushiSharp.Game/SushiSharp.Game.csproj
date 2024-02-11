@@ -10,4 +10,8 @@
       <ProjectReference Include="..\SushiSharp.Cards\SushiSharp.Cards.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="SpookilySharp" Version="1.2.0" />
+    </ItemGroup>
+
 </Project>

@@ -2,7 +2,7 @@
 
 namespace SushiSharp.Game;
 
-public class GameState(Player creator)
+public class GameState(Player creatorPlayerId)
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
 
@@ -10,5 +10,8 @@ public class GameState(Player creator)
 
     public GameParameters Parameters { get; set; } = new(2);
 
-    public List<Player> Players { get; set; } = new() { creator };
+    public List<Player> Players { get; set; } = [creatorPlayerId];
+
+    public List<Card> Deck { get; set; } = [];
+
 }

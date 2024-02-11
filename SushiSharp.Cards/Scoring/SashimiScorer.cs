@@ -12,7 +12,7 @@ public class SashimiScorer : IScorer
                 .Where(c => c.Type == CardType.Sashimi)
                 .ToArray();
 
-            scores.Add(tab.Player.Id, (sashimiCards.Length / 3) * 10);
+            scores.Add(tab.PlayerId, (sashimiCards.Length / 3) * 10);
         }
 
         return scores;

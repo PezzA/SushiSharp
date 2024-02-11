@@ -18,13 +18,13 @@ public class PuddingScorer : IScorer
 
             if (puddingsForPlayer == rollCounts[0])
             {
-                scores.Add(tab.Player.Id, 6);
+                scores.Add(tab.PlayerId, 6);
                 continue;
             }
 
             if (puddingsForPlayer == rollCounts[^1] && gameState.Count > 2)
             {
-                scores.Add(tab.Player.Id, -6);
+                scores.Add(tab.PlayerId, -6);
             }
         }
 

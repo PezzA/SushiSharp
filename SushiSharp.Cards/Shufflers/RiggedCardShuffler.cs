@@ -1,8 +1,8 @@
 namespace SushiSharp.Cards.Shufflers;
 
-public class RiggedCardShuffler(IList<Card> riggedDeck) : ICardShuffler
+public class RiggedCardShuffler(List<Card> riggedDeck) : ICardShuffler
 {
-    public IList<Card> Shuffle(IList<Card> cards)
+    public List<Card> Shuffle(List<Card> cards)
     {
         return riggedDeck;
     }

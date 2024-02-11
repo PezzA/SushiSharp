@@ -1,59 +1,68 @@
 ﻿@using SushiSharp.Cards
 @using SushiSharp.Game
-<h3>Game Lobby</h3>
+@using SushiSharp.Web.Components.Sushi.Chat
 
-<h4>Setup your Game</h4>
+@inject IDialogService DialogService
+@rendermode InteractiveServer
 
-<ul>
-    @foreach (var player in GameState.Players)
-    {
-        <li>@player.Name</li>
-    }
-</ul>
+<MudGrid>
+    <!-- Game Parameters Column -->
+    <MudItem xs="6">
+        <MudItem xs="4">
+            <MudNumericField @bind-Value="_maxPlayers" Label="Maximum Players" Variant="Variant.Text" Min="2" Max="8"/>
+        </MudItem>
+        <MudGrid>
+            @foreach (var player in GameState.Players)
+            {
+                <PlayerSelector GridWidth="6" Player="player"/>
+            }
+        </MudGrid>
 
-<table>
-    <tr>
-        <td>Players:</td>
-        <td>@GameState.Parameters.MaxPlayers</td>
-    </tr>
 
-    <tr>
-        <td>ThinkingTime:</td>
-        <td>@GameState.Parameters.MaxTurnTime</td>
-    </tr>
-    <tr>
-        <td>Rolls:</td>
-        <td>@GameState.Parameters.Rolls</td>
-    </tr>
-    <tr>
-        <td>Appetizer One:</td>
-        <td>@GameState.Parameters.Appetizer1</td>
-    </tr>
-    <tr>
-        <td>Appetizer Two:</td>
-        <td>@GameState.Parameters.Appetizer2</td>
-    </tr>
-    <tr>
-        <td>Appetizer Three:</td>
-        <td>@GameState.Parameters.Appetizer3</td>
-    </tr>
-    <tr>
-        <td>Special One:</td>
-        <td>@GameState.Parameters.Special1</td>
-    </tr>
-    <tr>
-        <td>Special Two:</td>
-        <td>@GameState.Parameters.Special2</td>
-    </tr>
-    <tr>
-        <td>Desert:</td>
-        <td>@GameState.Parameters.Desert</td>
-    </tr>
-</table>
+        <MenuSelect Slot="MenuSlot.Rolls" Xs="12" Default="CardType.MakiRolls" Readonly="true"/>
+        <MenuSelect Slot="MenuSlot.Appetiser1" Xs="12" Default="CardType.Tempura" Readonly="true"/>
+        <MenuSelect Slot="MenuSlot.Appetiser2" Xs="12" Default="CardType.Sashimi" Readonly="true"/>
+        <MenuSelect Slot="MenuSlot.Appetiser3" Xs="12" Default="CardType.Dumpling" Readonly="true"/>
+        <MenuSelect Slot="MenuSlot.Special1" Xs="12" Default="CardType.Chopsticks" Readonly="true"/>
+        <MenuSelect Slot="MenuSlot.Special2" Xs="12" Default="CardType.Wasabi" Readonly="true"/>
+        <MenuSelect Slot="MenuSlot.Desert" Xs="12" Default="CardType.Pudding" Readonly="true"/>
+        
+        <MudItem xs="12">
+            <MudSlider Value="@_maxThinkingTime" Min="15" Max="30">Maximum Turn Time (secs) : @_maxThinkingTime </MudSlider>
+        </MudItem>
+
+    </MudItem>
+    <!-- Chat Column -->
+    <MudItem xs="6">
+        <Chat/>
+    </MudItem>
+</MudGrid>
+
+<MudButton @onclick="Start" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Start" Color="Color.Primary">Start Game!</MudButton>
+<MudButton @onclick="Leave" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.ExitToApp" Color="Color.Warning">Leave Game</MudButton>
+
 
 @code {
+    [Parameter] public GameState GameState { get; set; } = new(new Player(string.Empty, string.Empty ));
+    [Parameter] public EventCallback<string> LeaveGame { get; set; }
+    [Parameter] public EventCallback<string> StartGame { get; set; }
 
-    [Parameter] public GameState GameState { get; set; } = new(new Player { Id = string.Empty, Name = string.Empty });
+    private int _maxPlayers = 0;
+    private int _maxThinkingTime = 20;
 
+    protected override void OnInitialized()
+    {
+        _maxPlayers = GameState.Parameters.MaxPlayers;
+        _maxThinkingTime = GameState.Parameters.MaxTurnTime;
+    }
 
+    private async Task Leave()
+    {
+        await LeaveGame.InvokeAsync(GameState.Id);
+    }
+
+    private async Task Start()
+    {
+        await StartGame.InvokeAsync(GameState.Id);
+    }
 }

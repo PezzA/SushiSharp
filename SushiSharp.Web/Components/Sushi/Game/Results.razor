@@ -4,5 +4,5 @@
 
 @code {
     
-    [Parameter] public GameState GameState { get; set; } = new(new Player { Id = string.Empty, Name = string.Empty });
+    [Parameter] public GameState GameState { get; set; } = new(new Player( string.Empty, string.Empty ));
 }

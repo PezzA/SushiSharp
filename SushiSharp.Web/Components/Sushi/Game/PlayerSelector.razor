@@ -1,0 +1,9 @@
+﻿@using SushiSharp.Cards
+@using SushiSharp.Game
+<MudItem xs="GridWidth">
+    <PlayerAvatar Player="Player"></PlayerAvatar>
+</MudItem>
+@code {
+    [Parameter] public int GridWidth { get; set; }
+    [Parameter] public Player? Player { get; set; }
+}

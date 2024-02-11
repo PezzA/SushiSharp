@@ -4,16 +4,14 @@
 <PageTitle>Sushi Lobby</PageTitle>
 
 <h3>GameLobby</h3>
-
-<div class="lobbycontainer">
-    <div class="lobbycolumn">
+<MudGrid>
+    <MudItem xs="6">
         <GameList Games="Games" JoinGame="JoinGame" CreateGame="CreateGame"/>
-    </div>
-
-    <div class="lobbycolumn">
+    </MudItem>
+    <MudItem xs="6">
         <Chat Messages="Messages" SendChatMessage="SendChatMessage"/>
-    </div>
-</div>
+    </MudItem>
+</MudGrid>
 
 @code {
     [Parameter] public List<ChatMessage> Messages { get; set; } = [];

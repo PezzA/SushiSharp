@@ -1,0 +1,13 @@
+﻿@using SushiSharp.Game
+<MudAvatar Elevation="2">
+    <MudImage Src="@Player.AvatarPath()" Alt="@Player.Name" ></MudImage>
+</MudAvatar>
+@if (ShowName)
+{
+    <MudText>@Player.Name</MudText>
+}
+
+@code {
+    [Parameter] public required Player Player { get; set; }
+    [Parameter] public bool ShowName { get; set; }
+}

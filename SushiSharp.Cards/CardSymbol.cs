@@ -10,5 +10,6 @@ public enum CardSymbol
     Tempura = 5,
     Sashimi = 6,
     Wasabi = 7,
-    Dumpling = 8
+    Dumpling = 8,
+    Pudding =9
 }

@@ -12,7 +12,7 @@ public class TempuraScorer : IScorer
                 .Where(c => c.Type == CardType.Tempura)
                 .ToArray();
 
-            scores.Add(tab.Player.Id, (sashimiCards.Length / 2) * 5);
+            scores.Add(tab.PlayerId, (sashimiCards.Length / 2) * 5);
         }
 
         return scores;

@@ -1,3 +1,3 @@
 ﻿namespace SushiSharp.Cards;
 
-public record Tableau(Player Player, IList<Card> Hand, IList<Card> Played, IList<Card> Side);
+public record Tableau(string PlayerId, IList<Card> Hand, IList<Card> Played, IList<Card> Side);

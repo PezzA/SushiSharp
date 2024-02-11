@@ -12,7 +12,7 @@ public class DumplingScorer : IScorer
                 .Where(c => c.Type == CardType.Dumpling)
                 .ToArray();
 
-            scores.Add(tab.Player.Id,
+            scores.Add(tab.PlayerId,
                 dumplings.Length switch
                 {
                     0 => 0,

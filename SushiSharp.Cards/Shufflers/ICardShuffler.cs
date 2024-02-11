@@ -5,5 +5,5 @@ namespace SushiSharp.Cards.Shufflers;
 /// </summary>
 public interface ICardShuffler
 {
-    public IList<Card> Shuffle(IList<Card> cards);
+    public List<Card> Shuffle(List<Card> cards);
 }

@@ -21,6 +21,7 @@
         <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.1" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.0" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.0" />
+        <PackageReference Include="MudBlazor" Version="6.15.0" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     </ItemGroup>
 
@@ -33,10 +34,6 @@
     <ItemGroup>
       <ProjectReference Include="..\SushiSharp.Cards\SushiSharp.Cards.csproj" />
       <ProjectReference Include="..\SushiSharp.Game\SushiSharp.Game.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Components\Sushi\" />
     </ItemGroup>
 
     <ItemGroup>

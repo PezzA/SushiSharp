@@ -29,7 +29,7 @@ public class MakiRollScorer : IScorer
 
             if (makiRollCount == 0)
             {
-                scores.Add(tab.Player.Id, 0);
+                scores.Add(tab.PlayerId, 0);
                 continue;
             }
 
@@ -53,7 +53,7 @@ public class MakiRollScorer : IScorer
                 score += 2;
             }
             
-            scores.Add(tab.Player.Id, score);
+            scores.Add(tab.PlayerId, score);
         }
 
         return scores;
