@@ -1,0 +1,11 @@
+﻿<div class="board"
+     style="width:@Width.ToString()px;height: @Height.ToString()px">
+    @ChildContent
+</div>
+
+@code {
+    [Parameter] public RenderFragment ChildContent { get; set; }
+    [Parameter] public int Width { get; set; } = 800;
+    [Parameter] public int Height{ get; set; } = 800;
+
+}

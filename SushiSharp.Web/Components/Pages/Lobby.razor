@@ -6,6 +6,7 @@
 @using Newtonsoft.Json
 @using SushiSharp.Game
 @using SushiSharp.Game.Chat
+@using SushiSharp.Game.ViewModels
 @using SushiSharp.Web.Components.Sushi.Game
 @using SushiSharp.Web.Components.Sushi.Lobby
 @implements IAsyncDisposable
@@ -27,7 +28,8 @@
             break;
         case GameStatus.Running:
             <Tableau
-                GameState="_gameState"/>
+                GameState="_gameState"
+                PlayerState="_playerState"/>
             break;
         case GameStatus.Results:
             <Results
@@ -52,9 +54,10 @@ else
 
     private List<ChatMessage> _messages = [];
 
-    private List<GameState> _gameList = [];
+    private List<PublicGameData> _gameList = [];
 
-    private GameState? _gameState = null;
+    private PublicGameData? _gameState = null;
+    private PublicPlayerData? _playerState = null;
 
     protected override async Task OnInitializedAsync()
     {
@@ -72,9 +75,10 @@ else
                 return;
             }
 
-            _gameList = JsonConvert.DeserializeObject<GameState[]>(gamesData)!.ToList();
+            _gameList = JsonConvert.DeserializeObject<PublicGameData[]>(gamesData)!.ToList();
             InvokeAsync(StateHasChanged);
         });
+        
 
         _hubConnection.On("LobbyChat", (string messages) =>
         {
@@ -88,11 +92,21 @@ else
             InvokeAsync(StateHasChanged);
         });
 
+        _hubConnection.On("SetPlayerData", (string playerData) =>
+        {
+            Console.WriteLine($"SetPlayerData: {playerData}");
+            _playerState = string.IsNullOrEmpty(playerData)
+                ? null
+                : JsonConvert.DeserializeObject<PublicPlayerData>(playerData);
+
+            InvokeAsync(StateHasChanged);
+        });
+        
         _hubConnection.On("SetGame", (string gameData) =>
         {
             _gameState = string.IsNullOrEmpty(gameData)
                 ? null
-                : JsonConvert.DeserializeObject<GameState>(gameData);
+                : JsonConvert.DeserializeObject<PublicGameData>(gameData);
 
             InvokeAsync(StateHasChanged);
         });

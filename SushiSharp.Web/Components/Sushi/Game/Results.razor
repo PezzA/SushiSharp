@@ -1,8 +1,9 @@
 ﻿@using SushiSharp.Cards
 @using SushiSharp.Game
+@using SushiSharp.Game.ViewModels
 <h3>Results</h3>
 
 @code {
     
-    [Parameter] public GameState GameState { get; set; } = new(new Player( string.Empty, string.Empty ));
+    [Parameter] public required PublicGameData GameState { get; set; }
 }

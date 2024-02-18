@@ -1,4 +1,5 @@
-﻿using SushiSharp.Cards.Decks;
+﻿using SushiSharp.Cards;
+using SushiSharp.Cards.Decks;
 using SushiSharp.Cards.Shufflers;
 
 namespace SushiSharp.Game;
@@ -17,7 +18,7 @@ public class MemoryGameService(ICardShuffler cardShuffler) : IGameService
 
         if (gameState == null) return null;
 
-        gameState = await RunGame(gameState.Id);
+        gameState = await RunGame(gameState.GameData.Id);
         
         return gameState;
     }
@@ -25,7 +26,7 @@ public class MemoryGameService(ICardShuffler cardShuffler) : IGameService
     public Task<GameState?> GetGameByPlayer(Player player)
     {
         var game = _gameList
-            .Where(g => g.Value != null && g.Value.Players.Any(p => p.Name == player.Name))
+            .Where(g => g.Value != null && g.Value.GameData.Players.Any(p => p.Name == player.Name))
             .Select(g => g.Value)
             .SingleOrDefault();
         
@@ -36,7 +37,7 @@ public class MemoryGameService(ICardShuffler cardShuffler) : IGameService
     {
         var game = new GameState(player);
 
-        _gameList.Add(game.Id, game);
+        _gameList.Add(game.GameData.Id, game);
 
         return Task.FromResult(game);
     }
@@ -62,12 +63,12 @@ public class MemoryGameService(ICardShuffler cardShuffler) : IGameService
             return Task.FromResult<GameState?>(null);
         }
 
-        if (gameState.Players.Count >= gameState.Parameters.MaxPlayers)
+        if (gameState.GameData.Players.Count >= gameState.GameData.Parameters.MaxPlayers)
         {
             return Task.FromResult<GameState?>(null);
         }
 
-        gameState.Players.Add(player);
+        gameState.GameData.Players.Add(player);
         
         return Task.FromResult<GameState?>(gameState);
     }
@@ -79,9 +80,9 @@ public class MemoryGameService(ICardShuffler cardShuffler) : IGameService
             return Task.CompletedTask;
         }
 
-        if (value?.Players[0].Name != player.Name)
+        if (value?.GameData.Players[0].Name != player.Name)
         {
-            value?.Players.Remove(player);
+            value?.GameData.Players.Remove(player);
         }
         else
         {
@@ -105,7 +106,7 @@ public class MemoryGameService(ICardShuffler cardShuffler) : IGameService
             return Task.FromResult<GameState?>(null);
         }
 
-        gameState!.Parameters = parameters;
+        gameState!.GameData.Parameters = parameters;
 
         return Task.FromResult(gameState)!;
     }
@@ -126,8 +127,28 @@ public class MemoryGameService(ICardShuffler cardShuffler) : IGameService
 
         if (gameState == null) return Task.FromResult<GameState?>(null);
 
-        gameState.Deck = cardShuffler.Shuffle(SushiGoClassic.GetDeck());
-        gameState.Status = GameStatus.Running;
+        
+        gameState.GameDeck = new Deck(cardShuffler, SushiGoClassic.GetDeck());
+        gameState.GameDeck.Shuffle();
+        
+        gameState.GameData.Status = GameStatus.Running;
+
+
+        gameState.PlayerBoardStates = gameState.GameData.Players
+            .Select(p => new Tableau(p.Id, [], [], []))
+            .ToList();
+
+        for (int i = 0; i < 9; i++)
+        {
+            foreach (var boardState in gameState.PlayerBoardStates)
+            {
+                (List<Card> cards, _) = gameState.GameDeck.Draw(1);
+                
+                // not going to check for end of deck
+                boardState.Hand.Add(cards[0]);
+            }
+        }
+
 
         return Task.FromResult<GameState?>(gameState);
     }

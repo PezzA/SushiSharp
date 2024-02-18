@@ -1,17 +1,35 @@
 ﻿using SushiSharp.Cards;
+using SushiSharp.Game.ViewModels;
 
 namespace SushiSharp.Game;
 
-public class GameState(Player creatorPlayerId)
+public class GameState(Player creator)
 {
-    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public PublicGameData GameData { get; set; } = new()
+    {
+        Players = [creator],
+        Id = Guid.NewGuid().ToString(),
+        Status = GameStatus.SettingUp,
+        Parameters = new GameParameters(2)
+    };
 
-    public GameStatus Status { get; set; } = GameStatus.SettingUp;
+    public Deck? GameDeck { get; set; } = null;
 
-    public GameParameters Parameters { get; set; } = new(2);
+    public List<Card> DiscardPile { get; set; } = [];
 
-    public List<Player> Players { get; set; } = [creatorPlayerId];
+    public List<Tableau> PlayerBoardStates { get; set; } = [];
 
-    public List<Card> Deck { get; set; } = [];
-
+    public PublicPlayerData GetPublicDataForPlayer(string playerId)
+    {
+        return new PublicPlayerData
+        {
+            Hand = PlayerBoardStates.Single(pbs => pbs.PlayerId == playerId).Hand.ToArray(),
+            Opponents = PlayerBoardStates.ToDictionary(
+                o => o.PlayerId,
+                o => new Opponent
+                {
+                    Played = o.Played.ToArray(), Sideboard = o.Side.ToArray(), HandSize = o.Hand.Count
+                })
+        };
+    }
 }

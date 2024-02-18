@@ -1,0 +1,13 @@
+﻿<style>
+
+ .smallCard
+    
+    
+</style>
+
+<div class="sushi-card" style="top:@X.ToString()px;left: @Y.ToString()px;background-color: @string.Format("#{0:X6}", Random.Shared.Next(0x1000000));"></div>
+
+@code {
+    [Parameter] public required int X { get; set; }
+    [Parameter] public required int Y { get; set; }
+}

@@ -1,6 +1,7 @@
 ﻿@using SushiSharp.Web.Components.Sushi.Chat
 @using SushiSharp.Game.Chat
 @using SushiSharp.Game
+@using SushiSharp.Game.ViewModels
 <PageTitle>Sushi Lobby</PageTitle>
 
 <h3>GameLobby</h3>
@@ -18,7 +19,7 @@
 
     [Parameter] public EventCallback<string> SendChatMessage { get; set; }
 
-    [Parameter] public List<GameState> Games { get; set; } = [];
+    [Parameter] public List<PublicGameData> Games { get; set; } = [];
 
     [Parameter] public EventCallback<string> JoinGame { get; set; }
 

@@ -1,19 +1,40 @@
 ﻿@using SushiSharp.Cards
 @using SushiSharp.Game
+@using SushiSharp.Game.ViewModels
 <h3>GameRun</h3>
 
-<MudTable Items="@GameState.Deck" Hover="true" Breakpoint="Breakpoint.Sm">
-    <HeaderContent>
-        <MudTh>Type</MudTh>
-        <MudTh>Symbols</MudTh>
-    </HeaderContent>
-    <RowTemplate>
-        <MudTd>@context.Type</MudTd>
-        <MudTd>@(string.Join(',', context.Symbols))</MudTd>
-    </RowTemplate>
-</MudTable>
+@if (PlayerState != null)
+{
+    <ul>
+        @foreach (var card in PlayerState.Hand)
+        {
+            <li>
+                <MudTd>@card.Type: @(string.Join(',', card.Symbols))</MudTd>
+            </li>
+        }
+    </ul>
+
+    @foreach (var opponent in PlayerState.Opponents)
+    {
+        <PlayerAvatar Player="GameState.Players.First(p => p.Id == opponent.Key)"/>
+
+        <div>Has @opponent.Value.HandSize cards in hand.</div>
+
+        <MudTable Items="@opponent.Value.Played" Hover="true" Breakpoint="Breakpoint.Sm">
+            <HeaderContent>
+                <MudTh>Type</MudTh>
+                <MudTh>Symbols</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.Type</MudTd>
+                <MudTd>@(string.Join(',', context.Symbols))</MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+}
 
 @code {
-    
-    [Parameter] public GameState GameState { get; set; } = new(new Player(string.Empty,string.Empty ));
+
+    [Parameter] public required PublicGameData GameState { get; set; }
+    [Parameter] public PublicPlayerData? PlayerState { get; set; }
 }

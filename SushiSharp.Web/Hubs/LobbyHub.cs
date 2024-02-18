@@ -12,14 +12,15 @@ public class LobbyHub : Hub
     private async Task BroadcastGameList(IGameService gameService, bool callerOnly = false)
     {
         var games = await gameService.GetGames();
+        
 
         if (callerOnly)
         {
-            await Clients.Caller.SendAsync("GameList", JsonConvert.SerializeObject(games));
+            await Clients.Caller.SendAsync("GameList", JsonConvert.SerializeObject(games.Select(g => g.GameData)));
         }
         else
         {
-            await Clients.All.SendAsync("GameList", JsonConvert.SerializeObject(games));
+            await Clients.All.SendAsync("GameList", JsonConvert.SerializeObject(games.Select(g => g.GameData)));
         }
     }
 
@@ -66,9 +67,9 @@ public class LobbyHub : Hub
 
         await BroadcastGameList(gameService);
 
-        await Groups.AddToGroupAsync(Context.ConnectionId, game.Id);
+        await Groups.AddToGroupAsync(Context.ConnectionId, game.GameData.Id);
 
-        await Clients.Caller.SendAsync("SetGame", JsonConvert.SerializeObject(game));
+        await Clients.Caller.SendAsync("SetGame", JsonConvert.SerializeObject(game.GameData));
     }
 
     public async Task LeaveGame(string gameId, IGameService gameService, IChatService chatService,
@@ -88,7 +89,7 @@ public class LobbyHub : Hub
 
         var game = await gameService.GetGame(gameId);
 
-        await Clients.Group(gameId).SendAsync("SetGame", JsonConvert.SerializeObject(game));
+        await Clients.Group(gameId).SendAsync("SetGame", JsonConvert.SerializeObject(game?.GameData));
 
         await BroadcastGameList(gameService);
         await BroadcastLobbyChat(chatService);
@@ -100,7 +101,20 @@ public class LobbyHub : Hub
     {
         var game = await gameService.StartGame(gameId);
 
-        await Clients.Group(gameId).SendAsync("SetGame", JsonConvert.SerializeObject(game));
+        if (game == null)
+        {
+            return;
+        }
+
+        await Clients.Group(gameId).SendAsync("SetGame", JsonConvert.SerializeObject(game.GameData));
+
+        foreach (var player in game.GameData.Players)
+        {
+            var playerGame = game.GetPublicDataForPlayer(player.Id);
+             
+            await Clients.Client(player.ConnectionId).SendAsync("SetPlayerData",
+                JsonConvert.SerializeObject(playerGame));
+        }
 
         await BroadcastGameList(gameService);
     }
@@ -122,9 +136,9 @@ public class LobbyHub : Hub
             return;
         }
 
-        await Groups.AddToGroupAsync(Context.ConnectionId, game.Id);
+        await Groups.AddToGroupAsync(Context.ConnectionId, game.GameData.Id);
 
-        await Clients.Group(game.Id).SendAsync("SetGame", JsonConvert.SerializeObject(game));
+        await Clients.Group(game.GameData.Id).SendAsync("SetGame", JsonConvert.SerializeObject(game.GameData));
 
         await BroadcastGameList(gameService);
     }
@@ -138,7 +152,7 @@ public class LobbyHub : Hub
 
         if (currentGame != null)
         {
-            await Clients.Caller.SendAsync("SetGame", JsonConvert.SerializeObject(currentGame));
+            await Clients.Caller.SendAsync("SetGame", JsonConvert.SerializeObject(currentGame.GameData));
             return;
         }
 
