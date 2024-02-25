@@ -1,14 +1,25 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using Akka.Actor;
+using Akka.Hosting;
+
+using Microsoft.AspNetCore.SignalR;
 
 using Newtonsoft.Json;
 
 using SushiSharp.Game;
 using SushiSharp.Game.Chat;
+using SushiSharp.Web.Actors;
 
 namespace SushiSharp.Web.Hubs;
 
 public class LobbyHub : Hub
 {
+    private readonly IActorRef _consoleActor;
+
+    public LobbyHub(IRequiredActor<ConsoleActor> consoleActor)
+    {
+        _consoleActor = consoleActor.ActorRef;
+    }
+
     private async Task BroadcastGameList(IGameService gameService, bool callerOnly = false)
     {
         var games = await gameService.GetGames();
@@ -55,6 +66,7 @@ public class LobbyHub : Hub
 
     public async Task CreateGame(IGameService gameService, IPlayerService playerService)
     {
+        _consoleActor.Tell("Creating a new game!");
         var player = await playerService.GetPlayerByConnectionId(Context.ConnectionId);
 
         // TODO : Could not find player

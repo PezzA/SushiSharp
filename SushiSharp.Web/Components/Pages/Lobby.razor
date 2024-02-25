@@ -15,6 +15,7 @@
 
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager Navigation
+@inject IJSRuntime JsRuntime
 
 @if (_gameState != null)
 {
@@ -78,7 +79,7 @@ else
             _gameList = JsonConvert.DeserializeObject<PublicGameData[]>(gamesData)!.ToList();
             InvokeAsync(StateHasChanged);
         });
-        
+
 
         _hubConnection.On("LobbyChat", (string messages) =>
         {
@@ -92,6 +93,11 @@ else
             InvokeAsync(StateHasChanged);
         });
 
+        _hubConnection.On("DebugMessage",(string messageData) =>
+        {
+            JsRuntime.InvokeAsync<string>("console.log", messageData);
+        });
+
         _hubConnection.On("SetPlayerData", (string playerData) =>
         {
             Console.WriteLine($"SetPlayerData: {playerData}");
@@ -101,7 +107,7 @@ else
 
             InvokeAsync(StateHasChanged);
         });
-        
+
         _hubConnection.On("SetGame", (string gameData) =>
         {
             _gameState = string.IsNullOrEmpty(gameData)
@@ -123,7 +129,7 @@ else
             await _hubConnection.SendAsync("StartGame", gameId);
         }
     }
-    
+
     private async Task JoinGame(string gameId)
     {
         if (_hubConnection is not null)

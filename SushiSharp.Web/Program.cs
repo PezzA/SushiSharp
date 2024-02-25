@@ -1,13 +1,18 @@
+using Akka.Actor;
+using Akka.Hosting;
+
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.ResponseCompression;
 
 using MudBlazor.Services;
 
 using SushiSharp.Cards.Shufflers;
 using SushiSharp.Game;
 using SushiSharp.Game.Chat;
+using SushiSharp.Web;
+using SushiSharp.Web.Actors;
 using SushiSharp.Web.Hubs;
 using SushiSharp.Web.Components;
 using SushiSharp.Web.Components.Account;
@@ -16,7 +21,8 @@ using SushiSharp.Web.Data;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddRazorComponents()
+builder.Services
+    .AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddCascadingAuthenticationState();
@@ -29,6 +35,16 @@ builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuth
 //    opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
 //        new[] { "application/octet-stream" });
 //});
+
+builder.Services.AddAkka("MyActorSystem", configurationBuilder =>
+{
+    configurationBuilder
+        .WithActors((system, registry, resolver) =>
+        {
+            var consoleActor = system.ActorOf(Props.Create(() => new ConsoleActor(resolver.GetService<IHubContext<LobbyHub>>())), "console");
+            registry.Register<ConsoleActor>(consoleActor);
+        });
+});
 
 builder.Services.AddAuthentication(options =>
     {
