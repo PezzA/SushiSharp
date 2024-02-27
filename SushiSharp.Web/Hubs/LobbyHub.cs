@@ -11,29 +11,9 @@ using SushiSharp.Web.Actors;
 
 namespace SushiSharp.Web.Hubs;
 
-public class LobbyHub : Hub
+public class LobbyHub(IRequiredActor<GameManagerActor> gameManagerActor, IPlayerService playerService) : Hub
 {
-    private readonly IActorRef _consoleActor;
-
-    public LobbyHub(IRequiredActor<ConsoleActor> consoleActor)
-    {
-        _consoleActor = consoleActor.ActorRef;
-    }
-
-    private async Task BroadcastGameList(IGameService gameService, bool callerOnly = false)
-    {
-        var games = await gameService.GetGames();
-        
-
-        if (callerOnly)
-        {
-            await Clients.Caller.SendAsync("GameList", JsonConvert.SerializeObject(games.Select(g => g.GameData)));
-        }
-        else
-        {
-            await Clients.All.SendAsync("GameList", JsonConvert.SerializeObject(games.Select(g => g.GameData)));
-        }
-    }
+    private readonly IActorRef _gameManagerActor = gameManagerActor.ActorRef;
 
     private async Task BroadcastLobbyChat(IChatService chatService, bool callerOnly = false)
     {
@@ -63,100 +43,41 @@ public class LobbyHub : Hub
         await BroadcastLobbyChat(chatService);
     }
 
-
-    public async Task CreateGame(IGameService gameService, IPlayerService playerService)
+    private async Task GenericPlayerRequest<T>() where T : GameActorMessages.PlayerRequest
     {
-        _consoleActor.Tell("Creating a new game!");
         var player = await playerService.GetPlayerByConnectionId(Context.ConnectionId);
 
-        // TODO : Could not find player
         if (player == null)
         {
             return;
         }
-
-        var game = await gameService.CreateNewGame(player);
-
-        await BroadcastGameList(gameService);
-
-        await Groups.AddToGroupAsync(Context.ConnectionId, game.GameData.Id);
-
-        await Clients.Caller.SendAsync("SetGame", JsonConvert.SerializeObject(game.GameData));
+        var message = (T)Activator.CreateInstance(typeof(T), player)!;
+        
+        _gameManagerActor.Tell(message);
     }
-
-    public async Task LeaveGame(string gameId, IGameService gameService, IChatService chatService,
-        IPlayerService playerService)
+    
+    private async Task GenericPlayerGameRequest<T>(string gameId) where T : GameActorMessages.PlayerGameRequest
     {
         var player = await playerService.GetPlayerByConnectionId(Context.ConnectionId);
 
-        // TODO : Could not find player
         if (player == null)
         {
             return;
         }
-
-        await gameService.LeaveCurrentGame(player, gameId);
-
-        await Groups.RemoveFromGroupAsync(@Context.ConnectionId, gameId);
-
-        var game = await gameService.GetGame(gameId);
-
-        await Clients.Group(gameId).SendAsync("SetGame", JsonConvert.SerializeObject(game?.GameData));
-
-        await BroadcastGameList(gameService);
-        await BroadcastLobbyChat(chatService);
-
-        await Clients.Caller.SendAsync("SetGame", null);
+        var message = (T)Activator.CreateInstance(typeof(T), player, gameId)!;
+        
+        _gameManagerActor.Tell(message);
     }
+    
+    public Task CreateGame() => GenericPlayerRequest<GameActorMessages.CreateGameRequest>();
 
-    public async Task StartGame(string gameId, IGameService gameService)
-    {
-        var game = await gameService.StartGame(gameId);
+    public Task LeaveGame(string gameId) => GenericPlayerGameRequest<GameActorMessages.LeaveGameRequest>(gameId);
+    
+    public Task StartGame(string gameId) => GenericPlayerGameRequest<GameActorMessages.StartGameRequest>(gameId);
+    
+    public Task JoinGame(string gameId) => GenericPlayerGameRequest<GameActorMessages.JoinGameRequest>(gameId);
 
-        if (game == null)
-        {
-            return;
-        }
-
-        await Clients.Group(gameId).SendAsync("SetGame", JsonConvert.SerializeObject(game.GameData));
-
-        foreach (var player in game.GameData.Players)
-        {
-            var playerGame = game.GetPublicDataForPlayer(player.Id);
-             
-            await Clients.Client(player.ConnectionId).SendAsync("SetPlayerData",
-                JsonConvert.SerializeObject(playerGame));
-        }
-
-        await BroadcastGameList(gameService);
-    }
-
-    public async Task JoinGame(string gameId, IGameService gameService, IPlayerService playerService)
-    {
-        var player = await playerService.GetPlayerByConnectionId(Context.ConnectionId);
-
-        // player not found
-        if (player == null)
-        {
-            return;
-        }
-
-        var game = await gameService.JoinGame(gameId, player);
-
-        if (game == null)
-        {
-            return;
-        }
-
-        await Groups.AddToGroupAsync(Context.ConnectionId, game.GameData.Id);
-
-        await Clients.Group(game.GameData.Id).SendAsync("SetGame", JsonConvert.SerializeObject(game.GameData));
-
-        await BroadcastGameList(gameService);
-    }
-
-    public async Task Init(string userName, IChatService chatService, IGameService gameService,
-        IPlayerService playerService)
+    public async Task Init(string userName, IChatService chatService, IGameService gameService)
     {
         var player = await playerService.AddPlayer(userName, Context.ConnectionId);
 
@@ -169,6 +90,7 @@ public class LobbyHub : Hub
         }
 
         await BroadcastLobbyChat(chatService, true);
-        await BroadcastGameList(gameService, true);
+
+        await GenericPlayerRequest<GameActorMessages.GetGameListRequest>();
     }
 }
