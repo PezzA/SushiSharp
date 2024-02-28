@@ -3,12 +3,12 @@ using SushiSharp.Game.ViewModels;
 
 namespace SushiSharp.Game;
 
-public class GameState(Player creator)
+public class GameState(Player creator, string gameId)
 {
     public PublicGameData GameData { get; set; } = new()
     {
         Players = [creator],
-        Id = Guid.NewGuid().ToString(),
+        Id = gameId,
         Status = GameStatus.SettingUp,
         Parameters = new GameParameters(2)
     };

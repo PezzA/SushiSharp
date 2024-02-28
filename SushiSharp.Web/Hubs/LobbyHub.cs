@@ -77,17 +77,9 @@ public class LobbyHub(IRequiredActor<GameManagerActor> gameManagerActor, IPlayer
     
     public Task JoinGame(string gameId) => GenericPlayerGameRequest<GameActorMessages.JoinGameRequest>(gameId);
 
-    public async Task Init(string userName, IChatService chatService, IGameService gameService)
+    public async Task InitClient(string userName, IChatService chatService)
     {
         var player = await playerService.AddPlayer(userName, Context.ConnectionId);
-
-        var currentGame = await gameService.GetGameByPlayer(player);
-
-        if (currentGame != null)
-        {
-            await Clients.Caller.SendAsync("SetGame", JsonConvert.SerializeObject(currentGame.GameData));
-            return;
-        }
 
         await BroadcastLobbyChat(chatService, true);
 

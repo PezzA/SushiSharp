@@ -68,7 +68,7 @@ else
             .WithUrl(Navigation.ToAbsoluteUri("/lobbyhub"))
             .Build();
 
-        _hubConnection.On("GameList", (string gamesData) =>
+        _hubConnection.On(ServerMessages.GameList, (string gamesData) =>
         {
             if (string.IsNullOrEmpty(gamesData))
             {
@@ -81,7 +81,7 @@ else
         });
 
 
-        _hubConnection.On("LobbyChat", (string messages) =>
+        _hubConnection.On(ServerMessages.LobbyChat, (string messages) =>
         {
             if (string.IsNullOrEmpty(messages))
             {
@@ -93,14 +93,14 @@ else
             InvokeAsync(StateHasChanged);
         });
 
-        _hubConnection.On("DebugMessage",(string messageData) =>
+        _hubConnection.On(ServerMessages.ErrorMessage,(string messageData) =>
         {
             JsRuntime.InvokeAsync<string>("console.log", messageData);
         });
 
-        _hubConnection.On("SetPlayerData", (string playerData) =>
+        _hubConnection.On(ServerMessages.SetPlayerData, (string playerData) =>
         {
-            Console.WriteLine($"SetPlayerData: {playerData}");
+            Console.WriteLine($"{ServerMessages.SetPlayerData}: {playerData}");
             _playerState = string.IsNullOrEmpty(playerData)
                 ? null
                 : JsonConvert.DeserializeObject<PublicPlayerData>(playerData);
@@ -108,7 +108,7 @@ else
             InvokeAsync(StateHasChanged);
         });
 
-        _hubConnection.On("SetGame", (string gameData) =>
+        _hubConnection.On(ServerMessages.SetGame, (string gameData) =>
         {
             _gameState = string.IsNullOrEmpty(gameData)
                 ? null
@@ -119,14 +119,14 @@ else
 
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         await _hubConnection.StartAsync();
-        await _hubConnection.SendAsync("Init", authState.User.Identity?.Name);
+        await _hubConnection.SendAsync(ClientMessage.InitClient, authState.User.Identity?.Name);
     }
 
     private async Task StartGame(string gameId)
     {
         if (_hubConnection is not null)
         {
-            await _hubConnection.SendAsync("StartGame", gameId);
+            await _hubConnection.SendAsync(ClientMessage.StartGame, gameId);
         }
     }
 
@@ -134,7 +134,7 @@ else
     {
         if (_hubConnection is not null)
         {
-            await _hubConnection.SendAsync("JoinGame", gameId);
+            await _hubConnection.SendAsync(ClientMessage.JoinGame, gameId);
         }
     }
 
@@ -142,7 +142,7 @@ else
     {
         if (_hubConnection is not null)
         {
-            await _hubConnection.SendAsync("CreateGame");
+            await _hubConnection.SendAsync(ClientMessage.CreateGame);
         }
     }
 
@@ -150,7 +150,7 @@ else
     {
         if (_hubConnection is not null)
         {
-            await _hubConnection.SendAsync("SendLobbyChat", message);
+            await _hubConnection.SendAsync(ClientMessage.SendLobbyChat, message);
         }
     }
 
@@ -158,7 +158,7 @@ else
     {
         if (_hubConnection is not null)
         {
-            await _hubConnection.SendAsync("LeaveGame", gameId);
+            await _hubConnection.SendAsync(ClientMessage.LeaveGame, gameId);
         }
     }
 
@@ -169,5 +169,4 @@ else
             await _hubConnection.DisposeAsync();
         }
     }
-
 }

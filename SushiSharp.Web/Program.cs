@@ -40,8 +40,17 @@ builder.Services.AddAkka("MyActorSystem", configurationBuilder =>
     configurationBuilder
         .WithActors((system, registry, resolver) =>
         {
-            var consoleActor = system.ActorOf(Props.Create(() => new ConsoleActor(resolver.GetService<IHubContext<LobbyHub>>())), "console");
-            registry.Register<ConsoleActor>(consoleActor);
+            var hubWriteActor =
+                system.ActorOf(
+                    Props.Create(() => new HubWriterActor(resolver.GetService<IHubContext<LobbyHub>>())),
+                    "LobbyHubWrite");
+
+            var gameManagerActor =
+                system.ActorOf(
+                    Props.Create(() => new GameManagerActor(resolver.GetService<ICardShuffler>(), hubWriteActor)),
+                    "GameManagerActor");
+
+            registry.Register<GameManagerActor>(gameManagerActor);
         });
 });
 
@@ -65,7 +74,6 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.Requ
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 builder.Services.AddSingleton<IChatService, MemoryChatService>();
-builder.Services.AddSingleton<IGameService, MemoryGameService>();
 builder.Services.AddSingleton<IPlayerService, MemoryPlayerService>();
 builder.Services.AddSingleton<ICardShuffler, RandomCardShuffler>();
 

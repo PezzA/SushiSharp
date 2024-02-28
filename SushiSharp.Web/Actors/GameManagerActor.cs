@@ -1,42 +1,49 @@
 ﻿using Akka.Actor;
 
-using Microsoft.AspNetCore.SignalR;
+using Newtonsoft.Json;
 
 using SushiSharp.Cards.Shufflers;
 using SushiSharp.Game.ViewModels;
-using SushiSharp.Web.Hubs;
 
 namespace SushiSharp.Web.Actors;
 
 public class GameManagerActor : ReceiveActor
 {
-    private readonly IHubContext<LobbyHub> _hubContext;
     private readonly ICardShuffler _cardShuffler;
-    
+    private readonly IActorRef _clientWriteActor;
+
     private readonly Dictionary<string, IActorRef> _gameActorList = [];
     private readonly Dictionary<string, PublicGameData> _gameDataList = [];
 
-    public GameManagerActor(IHubContext<LobbyHub> hubContext, ICardShuffler cardShuffler)
+    public GameManagerActor(ICardShuffler cardShuffler, IActorRef clientWriteActor)
     {
-        _hubContext = hubContext;
         _cardShuffler = cardShuffler;
+        _clientWriteActor = clientWriteActor;
         Receive<GameActorMessages.CreateGameRequest>(CreateGame);
-        ReceiveAsync<GameActorMessages.JoinGameRequest>(JoinGame);
-        ReceiveAsync<GameActorMessages.LeaveGameRequest>(LeaveGame);
-        ReceiveAsync<GameActorMessages.StartGameRequest>(StartGame);
-        ReceiveAsync<GameActorMessages.UpdateGameNotification>(UpdateGame);
-        ReceiveAsync<GameActorMessages.GetGameListRequest>(GetGameList);
+        Receive<GameActorMessages.JoinGameRequest>(JoinGame);
+        Receive<GameActorMessages.LeaveGameRequest>(LeaveGame);
+        Receive<GameActorMessages.StartGameRequest>(StartGame);
+        Receive<GameActorMessages.UpdateGameNotification>(UpdateGame);
+        Receive<GameActorMessages.GetGameListRequest>(GetGameList);
     }
 
-    private async Task GetGameList(GameActorMessages.GetGameListRequest message)
+    private void GetGameList(GameActorMessages.GetGameListRequest message)
     {
-        await _hubContext.Clients.Client(message.Player.ConnectionId).SendAsync("GameList", _gameDataList.ToArray());
+        var gameList = _gameDataList.Select(entry => entry.Value).ToArray();
+
+        _clientWriteActor.Tell(new HubWriterMessages.WriteClient(message.Player.ConnectionId,
+            ServerMessages.GameList,
+            JsonConvert.SerializeObject(gameList)));
     }
 
-    private async Task UpdateGame(GameActorMessages.UpdateGameNotification message)
+    private void UpdateGame(GameActorMessages.UpdateGameNotification message)
     {
         _gameDataList[message.GameData.Id] = message.GameData;
-        await _hubContext.Clients.All.SendAsync("GameList", _gameDataList.ToArray());
+
+        var gameList = _gameDataList.Select(entry => entry.Value).ToArray();
+
+        _clientWriteActor.Tell(new HubWriterMessages.WriteAll(ServerMessages.GameList,
+            JsonConvert.SerializeObject(gameList)));
     }
 
     private void CreateGame(GameActorMessages.CreateGameRequest message)
@@ -44,26 +51,27 @@ public class GameManagerActor : ReceiveActor
         var gameId = Guid.NewGuid().ToString();
 
         var gameActor = Context.ActorOf(Props.Create(
-            () => new GameActor(_hubContext, _cardShuffler, message.Player, gameId)));
+            () => new GameActor(_cardShuffler, _clientWriteActor, message.Player, gameId)));
 
         _gameActorList[gameId] = gameActor;
     }
 
-    private async Task GenericPlayerGameRequest<T>(T message) where T : GameActorMessages.PlayerGameRequest
+    private void GenericPlayerGameRequest<T>(T message) where T : GameActorMessages.PlayerGameRequest
     {
         if (!_gameActorList.ContainsKey(message.GameId))
         {
-            await _hubContext.Clients.Client(message.Player.ConnectionId)
-                .SendAsync("DebugMessage", $"{typeof(T)}: Game could not be found.  GameId :{message.GameId}");
+            _clientWriteActor.Tell(new HubWriterMessages.WriteClient(message.Player.ConnectionId,
+                ServerMessages.ErrorMessage, $"{typeof(T)}: Game could not be found.  GameId :{message.GameId}"));
+
             return;
         }
-        
+
         _gameActorList[message.GameId].Tell(message);
     }
 
-    private Task StartGame(GameActorMessages.StartGameRequest message) => GenericPlayerGameRequest(message);
-    
-    private Task JoinGame(GameActorMessages.JoinGameRequest message) => GenericPlayerGameRequest(message);
-    
-    private Task LeaveGame(GameActorMessages.LeaveGameRequest message) => GenericPlayerGameRequest(message);
+    private void StartGame(GameActorMessages.StartGameRequest message) => GenericPlayerGameRequest(message);
+
+    private void JoinGame(GameActorMessages.JoinGameRequest message) => GenericPlayerGameRequest(message);
+
+    private void LeaveGame(GameActorMessages.LeaveGameRequest message) => GenericPlayerGameRequest(message);
 }
