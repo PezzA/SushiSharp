@@ -19,5 +19,4 @@ public static class ClientMessage
     public const string LeaveGame = "LeaveGame";
     public const string CreateGame = "CreateGame";
     public const string SendLobbyChat = "SendLobbyChat";
-
 }
