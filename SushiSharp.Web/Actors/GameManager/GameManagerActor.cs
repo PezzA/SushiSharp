@@ -4,8 +4,10 @@ using Newtonsoft.Json;
 
 using SushiSharp.Cards.Shufflers;
 using SushiSharp.Game.ViewModels;
+using SushiSharp.Web.Actors.Game;
+using SushiSharp.Web.Actors.HubWriter;
 
-namespace SushiSharp.Web.Actors;
+namespace SushiSharp.Web.Actors.GameManager;
 
 public class GameManagerActor : ReceiveActor
 {

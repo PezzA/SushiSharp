@@ -1,10 +1,15 @@
 ﻿@using SushiSharp.Cards
 @using SushiSharp.Game
 @using SushiSharp.Game.ViewModels
-<h3>GameRun</h3>
 
-@if (PlayerState != null)
+
+@if (PlayerState != null && PlayerStatus != null)
 {
+    <h1>The Game!</h1>
+    <h2>Info</h2>
+    <p>There are @PlayerState.DeckSize card(s) in the Deck.</p>
+    <p>There are @PlayerState.DiscardSize card(s) in the Discard pile.</p>
+    <h2>Your Hand</h2>
     <ul>
         @foreach (var card in PlayerState.Hand)
         {
@@ -17,6 +22,15 @@
     @foreach (var opponent in PlayerState.Opponents)
     {
         <PlayerAvatar Player="GameState.Players.First(p => p.Id == opponent.Key)"/>
+
+        if (PlayerStatus.ContainsKey(opponent.Key))
+        {
+            <MudIcon Icon="@Icons.Material.TwoTone.CheckCircle" Title="Play Submitted" Color="Color.Success" Size="Size.Large"/>
+        }
+        else
+        {
+            <MudIcon Icon="@Icons.Material.TwoTone.HourglassBottom" Title="Play Not Submitted" Color="Color.Warning" Size="Size.Large"/>
+        }
 
         <div>Has @opponent.Value.HandSize cards in hand.</div>
 
@@ -32,9 +46,14 @@
         </MudTable>
     }
 }
+else
+{
+    <p>Game is running but we have no player state?</p>
+}
 
 @code {
 
     [Parameter] public required PublicGameData GameState { get; set; }
     [Parameter] public PublicPlayerData? PlayerState { get; set; }
+    [Parameter] public Dictionary<string, bool>? PlayerStatus { get; set; }
 }

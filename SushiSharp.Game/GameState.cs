@@ -29,7 +29,9 @@ public class GameState(Player creator, string gameId)
                 o => new Opponent
                 {
                     Played = o.Played.ToArray(), Sideboard = o.Side.ToArray(), HandSize = o.Hand.Count
-                })
+                }),
+            DeckSize = GameDeck.CardsRemaining(),
+            DiscardSize = DiscardPile.Count
         };
     }
 }

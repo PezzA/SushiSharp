@@ -12,6 +12,8 @@ using SushiSharp.Cards.Shufflers;
 using SushiSharp.Game;
 using SushiSharp.Game.Chat;
 using SushiSharp.Web.Actors;
+using SushiSharp.Web.Actors.GameManager;
+using SushiSharp.Web.Actors.HubWriter;
 using SushiSharp.Web.Hubs;
 using SushiSharp.Web.Components;
 using SushiSharp.Web.Components.Account;

@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.SignalR;
 
 using SushiSharp.Web.Hubs;
 
-namespace SushiSharp.Web.Actors;
+namespace SushiSharp.Web.Actors.HubWriter;
 
 public class HubWriterActor : ReceiveActor
 {

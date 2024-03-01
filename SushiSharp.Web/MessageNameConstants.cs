@@ -5,8 +5,10 @@ public static class ServerMessages
     public const string GameList = "GameList";
     public const string LobbyChat = "LobbyChat";
     public const string ErrorMessage = "ErrorMessage";
+    
     public const string SetGame = "SetGame";
     public const string SetPlayerData = "SetPlayerData";
+    public const string SetPlayStatus = "SetPlayStatus";
 }
 
 public static class ClientMessage
