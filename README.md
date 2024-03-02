@@ -3,6 +3,8 @@ Or Sharp Sushi!
 
 A demo implementation of the [Sushi Go!](https://boardgamegeek.com/boardgame/133473/sushi-go) card game in .Net.
 
+[![.NET](https://github.com/PezzA/SushiSharp/actions/workflows/dotnet.yml/badge.svg)](https://github.com/PezzA/SushiSharp/actions/workflows/dotnet.yml)
+
 Main tech stack.
 
 - [Blazor Server](https://learn.microsoft.com/en-us/aspnet/core/blazor/?view=aspnetcore-8.0)
