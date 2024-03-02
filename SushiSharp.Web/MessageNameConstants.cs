@@ -6,9 +6,10 @@ public static class ServerMessages
     public const string LobbyChat = "LobbyChat";
     public const string ErrorMessage = "ErrorMessage";
     
-    public const string SetGame = "SetGame";
-    public const string SetPlayerData = "SetPlayerData";
-    public const string SetPlayStatus = "SetPlayStatus";
+    public const string SetPlayerGame = "SetGame";
+    public const string SetPlayerVisibleData = "SetPlayerVisibleData";
+    public const string SetViewerVisibleData = "SetViewerVisibleData";
+    public const string SetPlayerTurnStatus = "SetPlayerTurnStatus";
 }
 
 public static class ClientMessage
@@ -19,4 +20,5 @@ public static class ClientMessage
     public const string LeaveGame = "LeaveGame";
     public const string CreateGame = "CreateGame";
     public const string SendLobbyChat = "SendLobbyChat";
+    public const string SubmitTurn = "SubmitTurn";
 }

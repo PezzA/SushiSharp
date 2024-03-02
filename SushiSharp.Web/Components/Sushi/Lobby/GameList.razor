@@ -2,7 +2,7 @@
 @using SushiSharp.Game.ViewModels
 <h3>Games</h3>
 
-<MudTable T="PublicGameData" Items="Games" Hover="true" Breakpoint="Breakpoint.Sm">
+<MudTable T="PublicVisible" Items="Games" Hover="true" Breakpoint="Breakpoint.Sm">
     <HeaderContent>
         <MudTh>Owner</MudTh>
         <MudTh>Players</MudTh>
@@ -27,7 +27,7 @@
 <MudButton @onclick="Create">Create Game</MudButton>
 
 @code {
-    [Parameter] public required List<PublicGameData> Games { get; set; }
+    [Parameter] public required List<PublicVisible> Games { get; set; }
     [Parameter] public EventCallback<string> JoinGame { get; set; }
     [Parameter] public EventCallback CreateGame { get; set; }
 

@@ -4,11 +4,13 @@
 @using Microsoft.AspNetCore.SignalR.Client
 @using Microsoft.AspNetCore.Authorization
 @using Newtonsoft.Json
+@using SushiSharp.Cards
 @using SushiSharp.Game
 @using SushiSharp.Game.Chat
 @using SushiSharp.Game.ViewModels
 @using SushiSharp.Web.Components.Sushi.Game
 @using SushiSharp.Web.Components.Sushi.Lobby
+@using Tableau = SushiSharp.Cards.Tableau
 @implements IAsyncDisposable
 
 @attribute [Authorize]
@@ -16,26 +18,29 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager Navigation
 @inject IJSRuntime JsRuntime
+@inject ISnackbar Snackbar
 
-@if (_gameState != null)
+@if (_publicVisible != null)
 {
-    switch (_gameState.Status)
+    switch (_publicVisible.Status)
     {
         case GameStatus.SettingUp:
             <Setup
-                GameState="_gameState"
+                GameState="_publicVisible"
                 LeaveGame="LeaveGame"
                 StartGame="StartGame"/>
             break;
         case GameStatus.Running:
             <Tableau
-                GameState="_gameState"
-                PlayerState="_playerState"
-                PlayerStatus="_playerStatus"/>
+                SubmitTurn="SubmitTurn"
+                GameState="_publicVisible"
+                PlayerState="_playerVisible"
+                ViewerState="_viewerVisible"
+                TurnState="_turnStatus"/>
             break;
         case GameStatus.Results:
             <Results
-                GameState="_gameState"/>
+                GameState="_publicVisible"/>
             break;
         default:
             throw new InvalidDataException("Unknown game state");
@@ -54,13 +59,24 @@ else
 @code {
     private HubConnection? _hubConnection;
 
-    private List<ChatMessage> _messages = [];
+    // Each private here represents a separately maintainable facet of client state
+    private List<ChatMessage>? _messages = [];
+    private List<PublicVisible> _gameList = [];
+    
+    private PublicVisible? _publicVisible;
+    private ViewerVisible? _viewerVisible;
+    private PlayerVisible? _playerVisible;
+    private Dictionary<string, bool>? _turnStatus = [];
 
-    private List<PublicGameData> _gameList = [];
-
-    private PublicGameData? _gameState = null;
-    private PublicPlayerData? _playerState = null;
-    private Dictionary<string, bool>? _playerStatus = [];
+    private async Task Debug(string message)
+    {
+        await JsRuntime.InvokeAsync<string>("console.log", message);
+    }
+    
+    private void Toast(string message, Severity severity)
+    {
+        Snackbar.Add(message, severity);
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -70,62 +86,76 @@ else
             .WithUrl(Navigation.ToAbsoluteUri("/lobbyhub"))
             .Build();
 
-        _hubConnection.On(ServerMessages.GameList, (string gamesData) =>
+        _hubConnection.On(ServerMessages.GameList, async (string message) =>
         {
-            if (string.IsNullOrEmpty(gamesData))
-            {
-                _gameList = [];
-                return;
-            }
+            await Debug($"{ServerMessages.GameList}: {message}");
 
-            _gameList = JsonConvert.DeserializeObject<PublicGameData[]>(gamesData)!.ToList();
-            InvokeAsync(StateHasChanged);
-        });
-
-
-        _hubConnection.On(ServerMessages.LobbyChat, (string messages) =>
-        {
-            if (string.IsNullOrEmpty(messages))
-            {
-                _messages = [];
-                return;
-            }
-
-            _messages = JsonConvert.DeserializeObject<List<ChatMessage>>(messages)!;
-            InvokeAsync(StateHasChanged);
-        });
-
-        _hubConnection.On(ServerMessages.ErrorMessage,(string messageData) =>
-        {
-            JsRuntime.InvokeAsync<string>("console.log", messageData);
-        });
-
-        _hubConnection.On(ServerMessages.SetPlayStatus, (string playerStatus) =>
-        {
-            Console.WriteLine($"{ServerMessages.SetPlayStatus}: {playerStatus}");
-            
-            _playerStatus = string.IsNullOrEmpty(playerStatus)
+            _gameList = string.IsNullOrEmpty(message)
                 ? []
-                : JsonConvert.DeserializeObject<Dictionary<string, bool>>(playerStatus);
+                : JsonConvert.DeserializeObject<PublicVisible[]>(message)!.ToList();
+
+            await InvokeAsync(StateHasChanged);
+        });
+
+        _hubConnection.On(ServerMessages.LobbyChat, async (string message) =>
+        {
+            await Debug($"{ServerMessages.LobbyChat}: {message}");
+
+            _messages = string.IsNullOrEmpty(message)
+                ? []
+                : JsonConvert.DeserializeObject<List<ChatMessage>>(message);
             
-        });
-        _hubConnection.On(ServerMessages.SetPlayerData, (string playerData) =>
-        {
-            Console.WriteLine($"{ServerMessages.SetPlayerData}: {playerData}");
-            _playerState = string.IsNullOrEmpty(playerData)
-                ? null
-                : JsonConvert.DeserializeObject<PublicPlayerData>(playerData);
-
-            InvokeAsync(StateHasChanged);
+            await InvokeAsync(StateHasChanged);
         });
 
-        _hubConnection.On(ServerMessages.SetGame, (string gameData) =>
+        _hubConnection.On(ServerMessages.ErrorMessage, async (string message) =>
         {
-            _gameState = string.IsNullOrEmpty(gameData)
-                ? null
-                : JsonConvert.DeserializeObject<PublicGameData>(gameData);
+            Toast(message, Severity.Warning);
+            await InvokeAsync(StateHasChanged);
+        });
 
-            InvokeAsync(StateHasChanged);
+        _hubConnection.On(ServerMessages.SetPlayerTurnStatus, async (string message) =>
+        {
+            await Debug($"{ServerMessages.SetPlayerTurnStatus}: {message}");
+
+            _turnStatus = string.IsNullOrEmpty(message)
+                ? []
+                : JsonConvert.DeserializeObject<Dictionary<string, bool>>(message);
+            
+            await InvokeAsync(StateHasChanged);
+        });
+
+        _hubConnection.On(ServerMessages.SetViewerVisibleData, async (string message) =>
+        {
+            await Debug($"{ServerMessages.SetViewerVisibleData}: {message}");
+
+            _viewerVisible = string.IsNullOrEmpty(message)
+                ? null
+                : JsonConvert.DeserializeObject<ViewerVisible>(message);
+            
+            await InvokeAsync(StateHasChanged);
+        });
+        
+        _hubConnection.On(ServerMessages.SetPlayerVisibleData, async (string message) =>
+        {
+            await Debug($"{ServerMessages.SetPlayerVisibleData}: {message}");
+
+             _playerVisible = string.IsNullOrEmpty(message)
+                ? null
+                : JsonConvert.DeserializeObject<PlayerVisible>(message);
+            
+            await InvokeAsync(StateHasChanged);
+        });
+
+        _hubConnection.On(ServerMessages.SetPlayerGame, async (string message) =>
+        {
+            await Debug($"{ServerMessages.SetPlayerGame}: {message}");
+
+            _publicVisible = string.IsNullOrEmpty(message)
+                ? null
+                : JsonConvert.DeserializeObject<PublicVisible>(message);
+            
+            await InvokeAsync(StateHasChanged);
         });
 
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
@@ -165,6 +195,13 @@ else
         }
     }
 
+    private async Task SubmitTurn(Sushi.Game.Tableau.SubmitTurnArgs args)
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.SendAsync(ClientMessage.SubmitTurn, args.GameId, JsonConvert.SerializeObject(args.Cards));
+        }
+    }
     private async Task LeaveGame(string gameId)
     {
         if (_hubConnection is not null)
@@ -180,4 +217,5 @@ else
             await _hubConnection.DisposeAsync();
         }
     }
+
 }

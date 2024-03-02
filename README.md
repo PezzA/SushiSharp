@@ -1,7 +1,7 @@
 ﻿# Sushi Sharp
 Or Sharp Sushi!
 
-A demo implementation of the [Sushi Go!](https://boardgamegeek.com/boardgame/133473/sushi-go) card game.
+A demo implementation of the [Sushi Go!](https://boardgamegeek.com/boardgame/133473/sushi-go) card game in .Net.
 
 Main tech stack.
 
@@ -9,7 +9,7 @@ Main tech stack.
   - Some SSR content
   - Mostly interactive server content.
 - [SignalR](https://learn.microsoft.com/en-us/aspnet/signalr/overview/getting-started/introduction-to-signalr)
-  - Setup and managment of messaging to and from the client
+  - Setup and managment of messaging to and from the client.
 - [Akka.net](https://getakka.net/)
   - Manages concurrency and application state.
  

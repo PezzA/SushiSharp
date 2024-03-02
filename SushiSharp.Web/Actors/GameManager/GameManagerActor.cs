@@ -15,7 +15,7 @@ public class GameManagerActor : ReceiveActor
     private readonly IActorRef _clientWriteActor;
 
     private readonly Dictionary<string, IActorRef> _gameActorList = [];
-    private readonly Dictionary<string, PublicGameData> _gameDataList = [];
+    private readonly Dictionary<string, PublicVisible> _gameDataList = [];
 
     public GameManagerActor(ICardShuffler cardShuffler, IActorRef clientWriteActor)
     {
@@ -27,13 +27,14 @@ public class GameManagerActor : ReceiveActor
         Receive<GameActorMessages.StartGameRequest>(StartGame);
         Receive<GameActorMessages.UpdateGameNotification>(UpdateGame);
         Receive<GameActorMessages.GetGameListRequest>(GetGameList);
+        Receive<GameActorMessages.GamePlayRequest>(SubmitTurn);
     }
 
     private void GetGameList(GameActorMessages.GetGameListRequest message)
     {
         var gameList = _gameDataList.Select(entry => entry.Value).ToArray();
 
-        _clientWriteActor.Tell(new HubWriterMessages.WriteClient(message.Player.ConnectionId,
+        _clientWriteActor.Tell(new HubWriterActorMessages.WriteClient(message.Player.ConnectionId,
             ServerMessages.GameList,
             JsonConvert.SerializeObject(gameList)));
     }
@@ -44,7 +45,7 @@ public class GameManagerActor : ReceiveActor
 
         var gameList = _gameDataList.Select(entry => entry.Value).ToArray();
 
-        _clientWriteActor.Tell(new HubWriterMessages.WriteAll(ServerMessages.GameList,
+        _clientWriteActor.Tell(new HubWriterActorMessages.WriteAll(ServerMessages.GameList,
             JsonConvert.SerializeObject(gameList)));
     }
 
@@ -62,7 +63,7 @@ public class GameManagerActor : ReceiveActor
     {
         if (!_gameActorList.ContainsKey(message.GameId))
         {
-            _clientWriteActor.Tell(new HubWriterMessages.WriteClient(message.Player.ConnectionId,
+            _clientWriteActor.Tell(new HubWriterActorMessages.WriteClient(message.Player.ConnectionId,
                 ServerMessages.ErrorMessage, $"{typeof(T)}: Game could not be found.  GameId :{message.GameId}"));
 
             return;
@@ -76,4 +77,17 @@ public class GameManagerActor : ReceiveActor
     private void JoinGame(GameActorMessages.JoinGameRequest message) => GenericPlayerGameRequest(message);
 
     private void LeaveGame(GameActorMessages.LeaveGameRequest message) => GenericPlayerGameRequest(message);
+
+    private void SubmitTurn(GameActorMessages.GamePlayRequest message)
+    {
+        if (!_gameActorList.ContainsKey(message.GameId))
+        {
+            _clientWriteActor.Tell(new HubWriterActorMessages.WriteClient(message.Player.ConnectionId,
+                ServerMessages.ErrorMessage, $"GamePlayRequest: Game could not be found.  GameId :{message.GameId}"));
+
+            return;
+        }
+
+        _gameActorList[message.GameId].Tell(message);
+    }
 }

@@ -6,7 +6,7 @@ namespace SushiSharp.Web.Actors.Game;
 
 public abstract class GameActorMessages
 {
-    public abstract record GameNotification(PublicGameData GameData);
+    public abstract record GameNotification(PublicVisible GameData);
 
     public abstract record PlayerRequest(Player Player);
 
@@ -22,7 +22,7 @@ public abstract class GameActorMessages
 
     public record LeaveGameRequest(Player Player, string GameId) : PlayerGameRequest(Player, GameId);
 
-    public record UpdateGameNotification(PublicGameData GameData) : GameNotification(GameData);
+    public record UpdateGameNotification(PublicVisible GameData) : GameNotification(GameData);
 
-    public record GamePlayRequest(Player Player, string GameId, Card[] Played);
+    public record GamePlayRequest(Player Player, string GameId, List<Card> Played);
 }

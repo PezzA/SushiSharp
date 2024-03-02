@@ -5,7 +5,7 @@ namespace SushiSharp.Cards.Tests.Scoring;
 [Trait("Category", "Scoring")]
 public class MakiRollScorerTests
 {
-    private static Tableau CreatePlayedTableau(string playerId, IList<Card> played)
+    private static Tableau CreatePlayedTableau(string playerId, List<Card> played)
     {
         return new Tableau(
             playerId,

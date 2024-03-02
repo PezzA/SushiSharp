@@ -1,0 +1,99 @@
+﻿.sushi-card {
+    background-image: url("OtherAssets/cards.jpg");
+    background-position: -815px -400px;
+    width: 269px;
+    height: 399px;
+    position: absolute;
+    border: 1px black solid;
+    border-radius: 9px;
+    z-index: 0;
+    transform-origin: center;
+}
+
+.dimmed {
+    transition: all .2s ease-in-out;
+    opacity: 75%;
+}
+
+.selected {
+    transition: all .2s ease-in-out;
+    transform: scale(0.5) rotate(0) !important;
+    border: 4px solid limegreen !important;
+    z-index: 1 !important;
+    box-shadow: 30px 30px 50px black !important;
+}
+
+.grow {
+    transition: all .2s ease-in-out;
+    cursor:pointer;
+
+    &:hover {
+        transform: scale(0.6) rotate(2deg);
+        border: 4px solid coral;
+        z-index: 1;
+        box-shadow: 40px 50px 75px black;
+    }
+}
+
+.small {
+    transform: scale(0.4);
+}
+
+.egg-nagiri {
+    background-position: -1px 0;
+}
+
+.salmon-nagiri {
+    background-position: -273px 0;
+}
+
+.squid-nagiri {
+    background-position: -543px 0;
+}
+
+.wasabi {
+    background-position: -813px 0;
+}
+
+.sashimi {
+    background-position: -1085px 0;
+}
+
+.tempura {
+    background-position: -1357px 0;
+}
+
+.dumpling {
+    background-position: -1631px 0;
+}
+
+.maki-1 {
+    background-position: -1901px 0;
+}
+
+.maki-2 {
+    background-position: -2171px 0;
+}
+
+.maki-3 {
+    background-position: -2440px 0;
+}
+
+.chopsticks {
+    background-position: 0 400px;
+}
+
+.pudding {
+    background-position: -273px 400px;
+}
+
+.soy-sauce {
+    background-position: -543px 400px;
+}
+
+.sushi-board {
+    position: relative;
+    width: 1000px;
+    height: 800px;
+    background-color: lightgrey;
+}

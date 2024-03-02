@@ -31,6 +31,9 @@
       <Content Include="..\.dockerignore">
         <Link>.dockerignore</Link>
       </Content>
+      <Content Update="wwwroot\sushi.css">
+        <DependentUpon>favicon.png</DependentUpon>
+      </Content>
     </ItemGroup>
 
     <ItemGroup>

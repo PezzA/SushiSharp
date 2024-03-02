@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.SignalR;
 
 using Newtonsoft.Json;
 
+using SushiSharp.Cards;
 using SushiSharp.Game;
 using SushiSharp.Game.Chat;
 using SushiSharp.Web.Actors;
@@ -73,6 +74,21 @@ public class LobbyHub(IRequiredActor<GameManagerActor> gameManagerActor, IPlayer
     
     public Task CreateGame() => GenericPlayerRequest<GameActorMessages.CreateGameRequest>();
 
+    public async Task SubmitTurn(string gameId, string payload)
+    {
+        var cards = JsonConvert.DeserializeObject<List<Card>>(payload);
+       
+        var player = await playerService.GetPlayerByConnectionId(Context.ConnectionId);
+
+        if (player == null)
+        {
+            return;
+        }
+        
+        
+        _gameManagerActor.Tell(new GameActorMessages.GamePlayRequest(player, gameId, cards));
+        
+    }
     public Task LeaveGame(string gameId) => GenericPlayerGameRequest<GameActorMessages.LeaveGameRequest>(gameId);
     
     public Task StartGame(string gameId) => GenericPlayerGameRequest<GameActorMessages.StartGameRequest>(gameId);

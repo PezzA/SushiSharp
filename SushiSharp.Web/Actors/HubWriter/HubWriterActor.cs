@@ -14,34 +14,34 @@ public class HubWriterActor : ReceiveActor
     {
         _hubContext = hubContext;
 
-        ReceiveAsync<HubWriterMessages.WriteClient>(ClientWrite);
-        ReceiveAsync<HubWriterMessages.WriteAll>(AllWrite);
-        ReceiveAsync<HubWriterMessages.WriteGroup>(GroupWrite);
-        ReceiveAsync<HubWriterMessages.AddToGroup>(AddToGroup);
-        ReceiveAsync<HubWriterMessages.RemoveFromGroup>(RemoveFromGroup);
+        ReceiveAsync<HubWriterActorMessages.WriteClient>(ClientWrite);
+        ReceiveAsync<HubWriterActorMessages.WriteAll>(AllWrite);
+        ReceiveAsync<HubWriterActorMessages.WriteGroup>(GroupWrite);
+        ReceiveAsync<HubWriterActorMessages.AddToGroup>(AddToGroup);
+        ReceiveAsync<HubWriterActorMessages.RemoveFromGroup>(RemoveFromGroup);
     }
 
-    private async Task AddToGroup(HubWriterMessages.AddToGroup message)
+    private async Task AddToGroup(HubWriterActorMessages.AddToGroup message)
     {
         await _hubContext.Groups.AddToGroupAsync(message.ConnectionId, message.GroupId);
     }
 
-    private async Task RemoveFromGroup(HubWriterMessages.RemoveFromGroup message)
+    private async Task RemoveFromGroup(HubWriterActorMessages.RemoveFromGroup message)
     {
         await _hubContext.Groups.RemoveFromGroupAsync(message.ConnectionId, message.GroupId);
     }
 
-    private async Task GroupWrite(HubWriterMessages.WriteGroup message)
+    private async Task GroupWrite(HubWriterActorMessages.WriteGroup message)
     {
         await _hubContext.Clients.Group(message.GroupId).SendAsync(message.Message, message.Payload);
     }
 
-    private async Task AllWrite(HubWriterMessages.WriteAll message)
+    private async Task AllWrite(HubWriterActorMessages.WriteAll message)
     {
         await _hubContext.Clients.All.SendAsync(message.Message, message.Payload);
     }
 
-    private async Task ClientWrite(HubWriterMessages.WriteClient message)
+    private async Task ClientWrite(HubWriterActorMessages.WriteClient message)
     {
         await _hubContext.Clients.Client(message.ConnectionId).SendAsync(message.Message, message.Payload);
     }

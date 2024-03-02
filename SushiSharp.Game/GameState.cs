@@ -5,7 +5,7 @@ namespace SushiSharp.Game;
 
 public class GameState(Player creator, string gameId)
 {
-    public PublicGameData GameData { get; set; } = new()
+    public PublicVisible GameData { get; set; } = new()
     {
         Players = [creator],
         Id = gameId,
@@ -19,19 +19,12 @@ public class GameState(Player creator, string gameId)
 
     public List<Tableau> PlayerBoardStates { get; set; } = [];
 
-    public PublicPlayerData GetPublicDataForPlayer(string playerId)
+    public PlayerVisible GetPublicDataForPlayer(string playerId)
     {
-        return new PublicPlayerData
+        return new PlayerVisible
         {
-            Hand = PlayerBoardStates.Single(pbs => pbs.PlayerId == playerId).Hand.ToArray(),
-            Opponents = PlayerBoardStates.ToDictionary(
-                o => o.PlayerId,
-                o => new Opponent
-                {
-                    Played = o.Played.ToArray(), Sideboard = o.Side.ToArray(), HandSize = o.Hand.Count
-                }),
-            DeckSize = GameDeck.CardsRemaining(),
-            DiscardSize = DiscardPile.Count
+            PlayerId = playerId,
+            Hand = PlayerBoardStates.Single(pbs => pbs.PlayerId == playerId).Hand,
         };
     }
 }

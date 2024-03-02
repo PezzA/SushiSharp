@@ -1,6 +1,6 @@
 ﻿namespace SushiSharp.Game.ViewModels;
 
-public class PublicGameData
+public class PublicVisible
 {
     public string Id { get; set; } = string.Empty;
 

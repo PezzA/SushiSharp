@@ -1,24 +1,43 @@
 ﻿@using SushiSharp.Cards
 @using SushiSharp.Game
 @using SushiSharp.Game.ViewModels
+@using Microsoft.EntityFrameworkCore.Metadata.Internal
 
-
-@if (PlayerState != null && PlayerStatus != null)
+@if (PlayerState != null && ViewerState != null  && TurnState != null)
 {
-    <h1>The Game!</h1>
-    <h2>Info</h2>
-    <p>There are @PlayerState.DeckSize card(s) in the Deck.</p>
-    <p>There are @PlayerState.DiscardSize card(s) in the Discard pile.</p>
-    <h2>Your Hand</h2>
-    <ul>
-        @foreach (var card in PlayerState.Hand)
-        {
-            <li>
-                <MudTd>@card.Type: @(string.Join(',', card.Symbols))</MudTd>
-            </li>
-        }
-    </ul>
+    <Board>
+        <TurnSelector 
+            XOffSet="0" 
+            YOffSet="-30" 
+            Hand="PlayerState.Hand" 
+            CurrentPlay="PlayerState.CurrentPlay" 
+            Played="ViewerState.OpponentStates[PlayerState.PlayerId].Played"
+            SubmitTurn="Submit"/>
 
+        @{
+            var opponentIndex = 0;
+        }
+        @foreach (var opponent in ViewerState.OpponentStates)
+        {
+            <div style="position: absolute; top: @((opponentIndex * 200) + 400)px">
+                <PlayerAvatar Player="GameState.Players.First(p => p.Id == opponent.Key)"/>
+
+                @if (TurnState.ContainsKey(opponent.Key))
+                {
+                    <MudIcon Icon="@Icons.Material.TwoTone.CheckCircle" Title="Play Submitted" Color="Color.Success" Size="Size.Large"/>
+                }
+                else
+                {
+                    <MudIcon Icon="@Icons.Material.TwoTone.HourglassBottom" Title="Play Not Submitted" Color="Color.Warning" Size="Size.Large"/>
+                }
+            </div>
+
+            opponentIndex += 1;
+        }
+    </Board>
+
+
+    <!--
     @foreach (var opponent in PlayerState.Opponents)
     {
         <PlayerAvatar Player="GameState.Players.First(p => p.Id == opponent.Key)"/>
@@ -45,6 +64,8 @@
             </RowTemplate>
         </MudTable>
     }
+    
+    -->
 }
 else
 {
@@ -52,8 +73,24 @@ else
 }
 
 @code {
+    [Parameter] public required PublicVisible GameState { get; set; }
+    [Parameter] public PlayerVisible? PlayerState { get; set; }
+    [Parameter] public ViewerVisible? ViewerState { get; set; }
+    [Parameter] public Dictionary<string,bool>? TurnState { get; set; }
+    [Parameter] public EventCallback<SubmitTurnArgs> SubmitTurn { get; set; }
 
-    [Parameter] public required PublicGameData GameState { get; set; }
-    [Parameter] public PublicPlayerData? PlayerState { get; set; }
-    [Parameter] public Dictionary<string, bool>? PlayerStatus { get; set; }
+    public class SubmitTurnArgs
+    {
+        public required string GameId { get; set; }
+        public required List<Card> Cards { get; set; }
+    }
+
+    private async Task Submit(List<Card> cards)
+    {
+        await SubmitTurn.InvokeAsync(new SubmitTurnArgs
+        {
+            GameId = GameState.Id,
+            Cards = cards
+        });
+    }
 }

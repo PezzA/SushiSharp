@@ -6,6 +6,7 @@ using SushiSharp.Cards;
 using SushiSharp.Cards.Decks;
 using SushiSharp.Cards.Shufflers;
 using SushiSharp.Game;
+using SushiSharp.Game.ViewModels;
 using SushiSharp.Web.Actors.HubWriter;
 
 namespace SushiSharp.Web.Actors.Game;
@@ -16,24 +17,90 @@ namespace SushiSharp.Web.Actors.Game;
 public class GameActor : ReceiveActor
 {
     // Dependencies
-    private readonly Player _creator;
-    private readonly string _gameId;
     private readonly ICardShuffler _cardShuffler;
     private readonly IActorRef _hubWriterActor;
+
+    // Board State
+
+    /// <summary>
+    /// Data that can be viewed in the game list.
+    /// </summary>
+    private readonly PublicVisible _publicGameData;
+
+    /// <summary>
+    /// Player who created the game
+    /// </summary>
+    private readonly Player _creator;
+
+    /// <summary>
+    /// Unique identifier for the game.
+    /// </summary>
+    private readonly string _gameId;
+
+    /// <summary>
+    /// If true, the game is awaiting on input from players
+    /// </summary>
     private bool _awaitingPlay;
 
-    // Internal State
-    private GameState _gameState;
+    /// <summary>
+    /// The main draw deck for the game
+    /// </summary>
+    private Deck? _drawPile;
 
-    private Dictionary<string, Card[]> _playList = [];
+    /// <summary>
+    /// The main discard pile
+    /// </summary>
+    private List<Card> _discardPile = [];
 
+    /// <summary>
+    /// The current round number
+    /// </summary>
     private int _round = 1;
+
+    /// <summary>
+    /// Current interval view of players hand and board state.
+    /// </summary>
+    private Dictionary<string, Tableau> _playerBoardStates = [];
+
+    /// <summary>
+    /// Contains currently collected turns, typically game state wont progress until all player turns are collected
+    /// </summary>
+    private Dictionary<string, List<Card>> _playerTurnList = [];
+
+    public GameActor(ICardShuffler cardShuffler, IActorRef hubWriterActor, Player creator, string gameId)
+    {
+        _cardShuffler = cardShuffler;
+        _hubWriterActor = hubWriterActor;
+        _creator = creator;
+        _gameId = gameId;
+
+        _publicGameData = new PublicVisible
+        {
+            Players = [_creator], Id = _gameId, Status = GameStatus.SettingUp, Parameters = new GameParameters(2)
+        };
+
+        Receive<GameActorMessages.StartGameRequest>(StartGame);
+        Receive<GameActorMessages.JoinGameRequest>(JoinGame);
+        Receive<GameActorMessages.GamePlayRequest>(GamePlay);
+    }
+
+    protected override void PreStart()
+    {
+        _hubWriterActor.Tell(new HubWriterActorMessages.AddToGroup(_gameId, _creator.ConnectionId));
+
+        Context.Parent.Tell(new GameActorMessages.UpdateGameNotification(_publicGameData));
+
+        _hubWriterActor.Tell(new HubWriterActorMessages.WriteClient(
+            _creator.ConnectionId,
+            ServerMessages.SetPlayerGame,
+            JsonConvert.SerializeObject(_publicGameData)));
+    }
 
     private void ProcessPlays()
     {
-        foreach ((string playerId, Card[] play) in _playList)
+        foreach ((string playerId, List<Card> play) in _playerTurnList)
         {
-            var tab = _gameState.PlayerBoardStates.Single(p => p.PlayerId == playerId);
+            var tab = _playerBoardStates[playerId];
 
             foreach (var card in play)
             {
@@ -41,9 +108,8 @@ public class GameActor : ReceiveActor
                 tab.Hand.Remove(card);
             }
 
-            if (play.Length > 1)
+            if (play.Count > 1)
             {
-                // TODO should validate it was in the hand to start with?
                 var card = tab.Played.First(c => c.Type == CardType.Chopsticks);
                 tab.Played.Remove(card);
                 tab.Hand.Add(card);
@@ -53,12 +119,11 @@ public class GameActor : ReceiveActor
 
     private void RotateHands()
     {
-        
     }
 
     private bool AllCardsPlayed()
     {
-        return _gameState.PlayerBoardStates.First().Hand.Count == 0;
+        return _playerBoardStates[_creator.Id].Hand.Count == 0;
     }
 
     private void ScoreGame()
@@ -89,19 +154,6 @@ public class GameActor : ReceiveActor
         _awaitingPlay = true;
     }
 
-    public GameActor(ICardShuffler cardShuffler, IActorRef hubWriterActor, Player creator, string gameId)
-    {
-        _cardShuffler = cardShuffler;
-        _hubWriterActor = hubWriterActor;
-        _creator = creator;
-        _gameId = gameId;
-
-        _gameState = new GameState(creator, gameId);
-        Receive<GameActorMessages.StartGameRequest>(StartGame);
-        Receive<GameActorMessages.JoinGameRequest>(JoinGame);
-        Receive<GameActorMessages.GamePlayRequest>(GamePlay);
-    }
-
     private void GamePlay(GameActorMessages.GamePlayRequest message)
     {
         if (!_awaitingPlay)
@@ -110,118 +162,149 @@ public class GameActor : ReceiveActor
             return;
         }
 
-        _playList[message.Player.Id] = message.Played;
+        _playerTurnList[message.Player.Id] = message.Played;
 
-        if (_playList.Count == _gameState.GameData.Players.Count)
+        if (_playerTurnList.Count == _publicGameData.Players.Count)
         {
             _awaitingPlay = false;
             UpdateGameState();
-            _playList = [];
+            _playerTurnList = [];
             _awaitingPlay = true;
         }
 
         SendPlayerStatus();
+
+        _hubWriterActor.Tell(new HubWriterActorMessages.WriteClient(
+            message.Player.ConnectionId,
+            ServerMessages.SetPlayerVisibleData,
+            JsonConvert.SerializeObject(GetPlayerVisibleData(message.Player.Id))));
     }
 
-    protected override void PreStart()
-    {
-        _gameState = new GameState(_creator, _gameId);
-
-        _hubWriterActor.Tell(new HubWriterMessages.AddToGroup(_gameId, _creator.ConnectionId));
-
-        Context.Parent.Tell(new GameActorMessages.UpdateGameNotification(_gameState.GameData));
-
-        _hubWriterActor.Tell(new HubWriterMessages.WriteClient(
-            _creator.ConnectionId,
-            ServerMessages.SetGame,
-            JsonConvert.SerializeObject(_gameState.GameData)));
-    }
 
     private void SendError(string connectionId, string message)
     {
-        _hubWriterActor.Tell(new HubWriterMessages.WriteClient(connectionId,
-            ServerMessages.ErrorMessage, message));
+        _hubWriterActor.Tell(new HubWriterActorMessages.WriteClient(
+            connectionId,
+            ServerMessages.ErrorMessage,
+            message));
     }
 
     private void JoinGame(GameActorMessages.JoinGameRequest message)
     {
-        if (_gameState.GameData.Players.Count >= _gameState.GameData.Parameters.MaxPlayers)
+        if (_publicGameData.Players.Count >= _publicGameData.Parameters.MaxPlayers)
         {
             SendError(message.Player.ConnectionId, "Max players in game.");
             return;
         }
 
-        if (_gameState.GameData.Players.Any(p => p.Id == message.Player.Id))
+        if (_publicGameData.Players.Any(p => p.Id == message.Player.Id))
         {
             SendError(message.Player.ConnectionId, "Client is already in a game.");
             return;
         }
 
-        _gameState.GameData.Players.Add(message.Player);
+        _publicGameData.Players.Add(message.Player);
 
-        _hubWriterActor.Tell(new HubWriterMessages.AddToGroup(message.GameId, message.Player.ConnectionId));
+        _hubWriterActor.Tell(new HubWriterActorMessages.AddToGroup(
+            message.GameId,
+            message.Player.ConnectionId));
 
-        _hubWriterActor.Tell(new HubWriterMessages.WriteGroup(
-            _gameState.GameData.Id,
-            ServerMessages.SetGame,
-            JsonConvert.SerializeObject(_gameState.GameData)));
+        _hubWriterActor.Tell(new HubWriterActorMessages.WriteGroup(
+            _publicGameData.Id,
+            ServerMessages.SetPlayerGame,
+            JsonConvert.SerializeObject(_publicGameData)));
 
-        Context.Parent.Tell(new GameActorMessages.UpdateGameNotification(_gameState.GameData));
+        Context.Parent.Tell(new GameActorMessages.UpdateGameNotification(_publicGameData));
     }
 
     private void DealCards()
     {
-        if (_gameState?.GameDeck == null) throw new InvalidOperationException("No game state or game Deck");
+        if (_drawPile == null) throw new InvalidOperationException("No game state or game Deck");
 
         for (int i = 0; i < 9; i++)
         {
-            foreach (var boardState in _gameState.PlayerBoardStates)
+            foreach (var boardState in _playerBoardStates)
             {
-                (List<Card> cards, _) = _gameState.GameDeck.Draw(1);
+                (List<Card> cards, _) = _drawPile.Draw(1);
 
                 // not going to check for end of deck
-                boardState.Hand.Add(cards[0]);
+                boardState.Value.Hand.Add(cards[0]);
             }
         }
     }
 
     private void ShuffleDeck()
     {
-        _gameState.GameDeck = new Deck(_cardShuffler, SushiGoClassic.GetDeck());
-        _gameState.GameDeck.Shuffle();
+        _drawPile = new Deck(_cardShuffler, SushiGoClassic.GetDeck());
+        _drawPile.Shuffle();
     }
 
     private void SendPlayerStatus()
     {
-        var statii = _gameState.GameData.Players.ToDictionary(p => p.Id, p => _playList.ContainsKey(p.Id));
-        _hubWriterActor.Tell(new HubWriterMessages.WriteGroup(_gameId, ServerMessages.SetPlayStatus,
+        var statii = _publicGameData.Players.ToDictionary(p => p.Id, p => _playerTurnList.ContainsKey(p.Id));
+
+        _hubWriterActor.Tell(new HubWriterActorMessages.WriteGroup(
+            _gameId,
+            ServerMessages.SetPlayerTurnStatus,
             JsonConvert.SerializeObject(statii)));
     }
 
     private void SendFullBoardState()
     {
-        _hubWriterActor.Tell(new HubWriterMessages.WriteGroup(_gameState.GameData.Id, ServerMessages.SetGame,
-            JsonConvert.SerializeObject(_gameState.GameData)));
+        _hubWriterActor.Tell(new HubWriterActorMessages.WriteGroup(
+            _gameId,
+            ServerMessages.SetPlayerGame,
+            JsonConvert.SerializeObject(_publicGameData)));
 
-        foreach (var player in _gameState.GameData.Players)
+        _hubWriterActor.Tell(new HubWriterActorMessages.WriteGroup(
+            _gameId,
+            ServerMessages.SetViewerVisibleData,
+            JsonConvert.SerializeObject(GetViewerVisibleData())));
+        
+        foreach (var player in _publicGameData.Players)
         {
-            _hubWriterActor.Tell(new HubWriterMessages.WriteClient(player.ConnectionId, ServerMessages.SetPlayerData,
-                JsonConvert.SerializeObject(_gameState.GetPublicDataForPlayer(player.Id))));
+            _hubWriterActor.Tell(new HubWriterActorMessages.WriteClient(
+                player.ConnectionId,
+                ServerMessages.SetPlayerVisibleData,
+                JsonConvert.SerializeObject(GetPlayerVisibleData(player.Id))));
         }
 
         SendPlayerStatus();
     }
 
+    private PlayerVisible GetPlayerVisibleData(string playerId) =>
+        new()
+        {
+            PlayerId = playerId,
+            Hand = _playerBoardStates[playerId].Hand,
+            CurrentPlay = _playerTurnList.TryGetValue(playerId, out List<Card>? value) ? value : []
+        };
+
+    private ViewerVisible GetViewerVisibleData() =>
+        new()
+        {
+            RoundNumber = _round,
+            CardsInDeck = _drawPile?.CardsRemaining() ?? 0,
+            CardsInDiscard = _discardPile.Count,
+            OpponentStates = _playerBoardStates.ToDictionary(k => k.Key,
+                k => new OpponentState
+                {
+                    HandSize = k.Value.Hand.Count,
+                    Sideboard = k.Value.Side,
+                    Played = k.Value.Played
+                })
+        };
+
     private void StartGame(GameActorMessages.StartGameRequest message)
     {
-        // TODO - Only the person who created the game should be able to start it.
+        _publicGameData.Status = GameStatus.Running;
+        Context.Parent.Tell(new GameActorMessages.UpdateGameNotification(_publicGameData));
 
-        _gameState.GameData.Status = GameStatus.Running;
-        Context.Parent.Tell(new GameActorMessages.UpdateGameNotification(_gameState.GameData));
-
-        _gameState.PlayerBoardStates = _gameState.GameData.Players
-            .Select(p => new Tableau(p.Id, [], [], []))
-            .ToList();
+        foreach (var player in _publicGameData.Players)
+        {
+            _playerBoardStates[player.Id] = new Tableau(player.Id, [], [], []);
+            _playerTurnList[player.Id] = [];
+        }
 
         ShuffleDeck();
 
