@@ -32,5 +32,6 @@ public class Deck
         
         return (cards.ToList(), _cards.Count == 0);
     }
-    
+
+    public int CardsRemaining() => _cards.Count;
 }

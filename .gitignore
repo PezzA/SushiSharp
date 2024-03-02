@@ -485,3 +485,7 @@ $RECYCLE.BIN/
 
 # SqlLite DB
 app.db*
+
+
+# Some content
+OtherAssets

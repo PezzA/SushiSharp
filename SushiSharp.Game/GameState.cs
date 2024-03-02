@@ -3,12 +3,12 @@ using SushiSharp.Game.ViewModels;
 
 namespace SushiSharp.Game;
 
-public class GameState(Player creator)
+public class GameState(Player creator, string gameId)
 {
-    public PublicGameData GameData { get; set; } = new()
+    public PublicVisible GameData { get; set; } = new()
     {
         Players = [creator],
-        Id = Guid.NewGuid().ToString(),
+        Id = gameId,
         Status = GameStatus.SettingUp,
         Parameters = new GameParameters(2)
     };
@@ -19,17 +19,12 @@ public class GameState(Player creator)
 
     public List<Tableau> PlayerBoardStates { get; set; } = [];
 
-    public PublicPlayerData GetPublicDataForPlayer(string playerId)
+    public PlayerVisible GetPublicDataForPlayer(string playerId)
     {
-        return new PublicPlayerData
+        return new PlayerVisible
         {
-            Hand = PlayerBoardStates.Single(pbs => pbs.PlayerId == playerId).Hand.ToArray(),
-            Opponents = PlayerBoardStates.ToDictionary(
-                o => o.PlayerId,
-                o => new Opponent
-                {
-                    Played = o.Played.ToArray(), Sideboard = o.Side.ToArray(), HandSize = o.Hand.Count
-                })
+            PlayerId = playerId,
+            Hand = PlayerBoardStates.Single(pbs => pbs.PlayerId == playerId).Hand,
         };
     }
 }

@@ -1,0 +1,81 @@
+﻿@using SushiSharp.Cards
+@using Microsoft.AspNetCore.Mvc.Filters
+
+<div 
+    class="sushi-card small @CardClass() @CanGrow() @Selected()" 
+    style="top:@X.ToString()px;left: @Y.ToString()px;"
+    @onclick="ClickCard"></div>
+
+@code {
+    [Parameter] public required Card SushiTableCard { get; set; }
+    [Parameter] public required int X { get; set; }
+    [Parameter] public required int Y { get; set; }
+    [Parameter] public required bool CanSelect { get; set; }
+    [Parameter] public required bool IsPicked { get; set; }
+    [Parameter] public EventCallback<TableCardSelectArgs> SelectChange { get; set; }
+
+    private string CanGrow()
+    {
+        return CanSelect || IsPicked
+            ? "grow"
+            : "dimmed";
+    }
+
+    private string Selected()
+    {
+        return IsPicked
+            ? "selected"
+            : string.Empty;
+    }
+
+    private string CardClass()
+    {
+        if (SushiTableCard.Type == CardType.MakiRolls)
+        {
+            return SushiTableCard.Symbols.Length switch
+            {
+                1 => "maki-1",
+                2 => "maki-2",
+                3 => "maki-3",
+                _ => string.Empty
+            };
+        }
+
+        if (SushiTableCard.Type == CardType.Nagiri)
+        {
+            return SushiTableCard.Symbols[0] switch
+            {
+                CardSymbol.NagiriEgg => "egg-nagiri",
+                CardSymbol.NagiriSalmon => "salmon-nagiri",
+                CardSymbol.NagiriSquid => "squid-nagiri",
+                _ => string.Empty
+            };
+        }
+
+        return SushiTableCard.Type switch
+        {
+            CardType.Tempura => "tempura",
+            CardType.Sashimi => "sashimi",
+            CardType.Pudding => "pudding",
+            CardType.Wasabi => "wasabi",
+            CardType.Chopsticks => "chopsticks",
+            CardType.Dumpling => "dumpling",
+            _ => string.Empty
+        };
+    }
+
+    private async Task ClickCard()
+    {
+        if (!CanSelect && !IsPicked) return;
+
+        IsPicked = !IsPicked;
+
+        await SelectChange.InvokeAsync(new TableCardSelectArgs{Selected = IsPicked, Card = SushiTableCard});
+    }
+
+    public class TableCardSelectArgs
+    {
+        public bool Selected { get; set; }
+        public required Card Card {get; set; }
+    }
+}

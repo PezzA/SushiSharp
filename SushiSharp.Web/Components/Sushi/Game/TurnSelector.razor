@@ -1,0 +1,63 @@
+﻿@using SushiSharp.Cards
+@using Microsoft.EntityFrameworkCore.Scaffolding
+
+<div style="position: absolute; top:@(XOffSet)px; left:0">
+    <span>@SelectionText()</span>
+    <MudButton Disabled="CurrentPlay.Count == 0" ButtonType="ButtonType.Button" Variant="Variant.Filled" Color="Color.Primary" @onclick="Submit">Play!</MudButton>
+</div>
+
+@foreach (var card in Hand.Select((value, index) => new { index, value }))
+{
+    <TableCard X="XOffSet-50" Y="(card.index * 120) + YOffSet" SushiTableCard="card.value" CanSelect="!MaxCardSelected()" SelectChange="SelectCard"></TableCard>
+}
+
+@code {
+    [Parameter] public required List<Card> Hand { get; set; }
+    [Parameter] public required List<Card> CurrentPlay { get; set; }
+    [Parameter] public required List<Card> Played { get; set; }
+    [Parameter] public required int XOffSet { get; set; }
+    [Parameter] public required int YOffSet { get; set; }
+    
+    [Parameter] public EventCallback<List<Card>> SubmitTurn { get; set; }
+
+    private void SelectCard(TableCard.TableCardSelectArgs args)
+    {
+        if (args.Selected)
+        {
+            CurrentPlay.Add(args.Card);
+        }
+        else
+        {
+            CurrentPlay.Remove(args.Card);
+        }
+    }
+    
+    private string SelectionText()
+    {
+        if (MaxCardSelected())
+        {
+            return "All cards selected, you may lock in your play!";
+        }
+
+        return _hasChopsticks()
+            ? "You may take a card, and optionally take one additional card in exchange for your chopsticks!"
+            : "You may take a card.";
+    }
+
+    private bool MaxCardSelected()
+    {
+        return (!_hasChopsticks() && CurrentPlay.Count() == 1) ||
+               (_hasChopsticks() && CurrentPlay.Count() == 2);
+    }
+
+    private bool _hasChopsticks()
+    {
+        return Played.Any(c => c.Type == CardType.Chopsticks);
+    }
+
+    private async Task Submit()
+    {
+        await SubmitTurn.InvokeAsync(CurrentPlay);
+    }
+
+}

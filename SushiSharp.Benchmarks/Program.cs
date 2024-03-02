@@ -13,7 +13,7 @@ namespace SushiSharp.Benchmarks
         private readonly List<Tableau> _benchTab;
         private readonly MakiRollScorer _scorer = new();
 
-        private static Tableau CreatePlayedTableau(string playerId, IList<Card> played)
+        private static Tableau CreatePlayedTableau(string playerId, List<Card> played)
         {
             return new Tableau(
                 playerId,
