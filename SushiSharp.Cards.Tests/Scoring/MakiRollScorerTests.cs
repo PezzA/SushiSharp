@@ -22,7 +22,7 @@ public class MakiRollScorerTests
         var player1Tableau = CreatePlayedTableau("P1",
             new List<Card>()
             {
-                new([CardSymbol.MakiRoll, CardSymbol.MakiRoll],
+                new(1, [CardSymbol.MakiRoll, CardSymbol.MakiRoll],
                     CardType.MakiRolls)
             });
 
@@ -30,7 +30,7 @@ public class MakiRollScorerTests
         var player2Tableau = CreatePlayedTableau("P2",
             new List<Card>()
             {
-                new([CardSymbol.MakiRoll, CardSymbol.MakiRoll, CardSymbol.MakiRoll],
+                new(1, [CardSymbol.MakiRoll, CardSymbol.MakiRoll, CardSymbol.MakiRoll],
                     CardType.MakiRolls)
             });
 
@@ -52,7 +52,7 @@ public class MakiRollScorerTests
         var player1Tableau = CreatePlayedTableau("P1",
             new List<Card>()
             {
-                new([CardSymbol.MakiRoll, CardSymbol.MakiRoll],
+                new(1, [CardSymbol.MakiRoll, CardSymbol.MakiRoll],
                     CardType.MakiRolls)
             });
 
@@ -60,7 +60,7 @@ public class MakiRollScorerTests
         var player2Tableau = CreatePlayedTableau("P2",
             new List<Card>()
             {
-                new([CardSymbol.Sashimi],
+                new(1, [CardSymbol.Sashimi],
                     CardType.Sashimi)
             });
 
@@ -79,7 +79,7 @@ public class MakiRollScorerTests
         var player1Tableau = CreatePlayedTableau("P1",
             new List<Card>()
             {
-                new([CardSymbol.Tempura],
+                new(1, [CardSymbol.Tempura],
                     CardType.Tempura)
             });
 
@@ -87,7 +87,7 @@ public class MakiRollScorerTests
         var player2Tableau = CreatePlayedTableau("P2",
             new List<Card>()
             {
-                new([CardSymbol.Sashimi],
+                new(1, [CardSymbol.Sashimi],
                     CardType.Sashimi)
             });
 

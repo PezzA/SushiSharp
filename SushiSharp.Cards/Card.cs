@@ -1,3 +1,3 @@
 namespace SushiSharp.Cards;
 
-public record Card(CardSymbol[] Symbols, CardType Type);
+public record Card(int Id, CardSymbol[] Symbols, CardType Type);

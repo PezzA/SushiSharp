@@ -22,7 +22,7 @@
             <div style="position: absolute; top: @((opponentIndex * 200) + 400)px">
                 <PlayerAvatar Player="GameState.Players.First(p => p.Id == opponent.Key)"/>
 
-                @if (TurnState.ContainsKey(opponent.Key))
+                @if (TurnState.TryGetValue(opponent.Key, out var played) && played)
                 {
                     <MudIcon Icon="@Icons.Material.TwoTone.CheckCircle" Title="Play Submitted" Color="Color.Success" Size="Size.Large"/>
                 }

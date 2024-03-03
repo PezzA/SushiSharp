@@ -8,7 +8,7 @@
 
 @foreach (var card in Hand.Select((value, index) => new { index, value }))
 {
-    <TableCard X="XOffSet-50" Y="(card.index * 120) + YOffSet" SushiTableCard="card.value" CanSelect="!MaxCardSelected()" SelectChange="SelectCard"></TableCard>
+    <TableCard @key="card.value.Id" X="XOffSet-50" Y="(card.index * 120) + YOffSet" SushiTableCard="card.value" CanSelect="!MaxCardSelected()" SelectChange="SelectCard"></TableCard>
 }
 
 @code {
