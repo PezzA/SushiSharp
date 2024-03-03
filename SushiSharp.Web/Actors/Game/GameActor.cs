@@ -105,7 +105,7 @@ public class GameActor : ReceiveActor
             foreach (var card in play)
             {
                 tab.Played.Add(card);
-                tab.Hand.Remove(card);
+                tab.Hand.RemoveAt(tab.Hand.FindIndex(c => c.Id == card.Id));
             }
 
             if (play.Count > 1)
@@ -145,6 +145,9 @@ public class GameActor : ReceiveActor
         if (_round == 3)
         {
             ScoreGame();
+            _publicGameData.Status = GameStatus.Results;
+
+            Context.Parent.Tell(new GameActorMessages.UpdateGameNotification(_publicGameData));
             return;
         }
 
@@ -164,20 +167,20 @@ public class GameActor : ReceiveActor
 
         _playerTurnList[message.Player.Id] = message.Played;
 
-        if (_playerTurnList.Count == _publicGameData.Players.Count)
+        if (_playerTurnList.Count == _publicGameData.Parameters.MaxPlayers)
         {
             _awaitingPlay = false;
+
             UpdateGameState();
+
             _playerTurnList = [];
+
+            BroadCastPlayerVisibleData();
+
             _awaitingPlay = true;
         }
 
         SendPlayerStatus();
-
-        _hubWriterActor.Tell(new HubWriterActorMessages.WriteClient(
-            message.Player.ConnectionId,
-            ServerMessages.SetPlayerVisibleData,
-            JsonConvert.SerializeObject(GetPlayerVisibleData(message.Player.Id))));
     }
 
 
@@ -249,6 +252,17 @@ public class GameActor : ReceiveActor
             JsonConvert.SerializeObject(statii)));
     }
 
+    private void BroadCastPlayerVisibleData()
+    {
+        foreach (var player in _publicGameData.Players)
+        {
+            _hubWriterActor.Tell(new HubWriterActorMessages.WriteClient(
+                player.ConnectionId,
+                ServerMessages.SetPlayerVisibleData,
+                JsonConvert.SerializeObject(GetPlayerVisibleData(player.Id))));
+        }
+    }
+
     private void SendFullBoardState()
     {
         _hubWriterActor.Tell(new HubWriterActorMessages.WriteGroup(
@@ -260,15 +274,8 @@ public class GameActor : ReceiveActor
             _gameId,
             ServerMessages.SetViewerVisibleData,
             JsonConvert.SerializeObject(GetViewerVisibleData())));
-        
-        foreach (var player in _publicGameData.Players)
-        {
-            _hubWriterActor.Tell(new HubWriterActorMessages.WriteClient(
-                player.ConnectionId,
-                ServerMessages.SetPlayerVisibleData,
-                JsonConvert.SerializeObject(GetPlayerVisibleData(player.Id))));
-        }
 
+        BroadCastPlayerVisibleData();
         SendPlayerStatus();
     }
 
@@ -289,9 +296,7 @@ public class GameActor : ReceiveActor
             OpponentStates = _playerBoardStates.ToDictionary(k => k.Key,
                 k => new OpponentState
                 {
-                    HandSize = k.Value.Hand.Count,
-                    Sideboard = k.Value.Side,
-                    Played = k.Value.Played
+                    HandSize = k.Value.Hand.Count, Sideboard = k.Value.Side, Played = k.Value.Played
                 })
         };
 
@@ -303,8 +308,9 @@ public class GameActor : ReceiveActor
         foreach (var player in _publicGameData.Players)
         {
             _playerBoardStates[player.Id] = new Tableau(player.Id, [], [], []);
-            _playerTurnList[player.Id] = [];
         }
+
+        _playerTurnList = [];
 
         ShuffleDeck();
 

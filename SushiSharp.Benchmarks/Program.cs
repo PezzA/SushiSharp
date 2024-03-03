@@ -27,19 +27,17 @@ namespace SushiSharp.Benchmarks
         {
             // Player 1 has 2 maki rolls
             var player1Tableau = CreatePlayedTableau("P1",
-                new List<Card>()
-                {
-                    new([CardSymbol.MakiRoll, CardSymbol.MakiRoll],
-                        CardType.MakiRolls)
-                });
+            [
+                new Card(1, [CardSymbol.MakiRoll, CardSymbol.MakiRoll],
+                    CardType.MakiRolls)
+            ]);
 
             // Player 2 has 3 maki rolls
             var player2Tableau = CreatePlayedTableau("P2",
-                new List<Card>()
-                {
-                    new([CardSymbol.MakiRoll, CardSymbol.MakiRoll, CardSymbol.MakiRoll],
-                        CardType.MakiRolls)
-                });
+            [
+                new Card(1, [CardSymbol.MakiRoll, CardSymbol.MakiRoll, CardSymbol.MakiRoll],
+                    CardType.MakiRolls)
+            ]);
 
             _benchTab = new List<Tableau> { player1Tableau, player2Tableau };
         }
