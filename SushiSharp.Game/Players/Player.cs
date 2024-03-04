@@ -1,6 +1,6 @@
 ﻿using SpookilySharp;
 
-namespace SushiSharp.Game;
+namespace SushiSharp.Game.Players;
 
 public class Player
 {

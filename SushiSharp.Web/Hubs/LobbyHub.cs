@@ -7,10 +7,11 @@ using Newtonsoft.Json;
 
 using SushiSharp.Cards;
 using SushiSharp.Game;
+using SushiSharp.Game.Actors.Game;
 using SushiSharp.Game.Actors.GameManager;
 using SushiSharp.Game.Chat;
+using SushiSharp.Game.Players;
 using SushiSharp.Web.Actors;
-using SushiSharp.Web.Actors.Game;
 
 namespace SushiSharp.Web.Hubs;
 

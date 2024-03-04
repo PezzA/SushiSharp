@@ -1,6 +1,6 @@
 ﻿using SushiSharp.Cards;
 
-namespace SushiSharp.Game;
+namespace SushiSharp.Game.Models;
 
 public class GameParameters(int maxPlayers)
 {

@@ -2,16 +2,16 @@
 
 namespace SushiSharp.Cards.Tests.Scoring;
 
-[Trait("Category", "Scoring")]
+[Trait("Category", "UnitTests")]
 public class MakiRollScorerTests
 {
     private static Tableau CreatePlayedTableau(string playerId, List<Card> played)
     {
         return new Tableau(
             playerId,
-            new List<Card>(),
+            [],
             played,
-            new List<Card>()
+            []
         );
     }
 
@@ -20,28 +20,26 @@ public class MakiRollScorerTests
     {
         // Player 1 has 2 maki rolls
         var player1Tableau = CreatePlayedTableau("P1",
-            new List<Card>()
-            {
-                new(1, [CardSymbol.MakiRoll, CardSymbol.MakiRoll],
-                    CardType.MakiRolls)
-            });
+        [
+            new Card(1, [CardSymbol.MakiRoll, CardSymbol.MakiRoll],
+                CardType.MakiRolls)
+        ]);
 
         // Player 2 has 3 maki rolls
         var player2Tableau = CreatePlayedTableau("P2",
-            new List<Card>()
-            {
-                new(1, [CardSymbol.MakiRoll, CardSymbol.MakiRoll, CardSymbol.MakiRoll],
-                    CardType.MakiRolls)
-            });
+        [
+            new Card(1, [CardSymbol.MakiRoll, CardSymbol.MakiRoll, CardSymbol.MakiRoll],
+                CardType.MakiRolls)
+        ]);
 
         var scorer = new MakiRollScorer();
 
         var makiScores = scorer.Score(new List<Tableau> { player1Tableau, player2Tableau });
-        
+
         Assert.Equal(6, makiScores["P2"]);
         Assert.Equal(3, makiScores["P1"]);
     }
-    
+
     /// <summary>
     /// You have to have a maki roll to be considered for scoring. In the case player 2 gets no points.
     /// </summary>
@@ -50,51 +48,47 @@ public class MakiRollScorerTests
     {
         // Player 1 has 2 maki rolls
         var player1Tableau = CreatePlayedTableau("P1",
-            new List<Card>()
-            {
-                new(1, [CardSymbol.MakiRoll, CardSymbol.MakiRoll],
-                    CardType.MakiRolls)
-            });
+        [
+            new Card(1, [CardSymbol.MakiRoll, CardSymbol.MakiRoll],
+                CardType.MakiRolls)
+        ]);
 
         // Player 2 has 3 maki rolls
         var player2Tableau = CreatePlayedTableau("P2",
-            new List<Card>()
-            {
-                new(1, [CardSymbol.Sashimi],
-                    CardType.Sashimi)
-            });
+        [
+            new Card(1, [CardSymbol.Sashimi],
+                CardType.Sashimi)
+        ]);
 
         var scorer = new MakiRollScorer();
 
         var makiScores = scorer.Score(new List<Tableau> { player1Tableau, player2Tableau });
-        
+
         Assert.Equal(0, makiScores["P2"]);
         Assert.Equal(6, makiScores["P1"]);
     }
-    
+
     [Fact]
     public void TwoPlayers_BothWithNone_NoPoints()
     {
         // Player 1 has 2 maki rolls
         var player1Tableau = CreatePlayedTableau("P1",
-            new List<Card>()
-            {
-                new(1, [CardSymbol.Tempura],
-                    CardType.Tempura)
-            });
+        [
+            new Card(1, [CardSymbol.Tempura],
+                CardType.Tempura)
+        ]);
 
         // Player 2 has 3 maki rolls
         var player2Tableau = CreatePlayedTableau("P2",
-            new List<Card>()
-            {
-                new(1, [CardSymbol.Sashimi],
-                    CardType.Sashimi)
-            });
+        [
+            new Card(1, [CardSymbol.Sashimi],
+                CardType.Sashimi)
+        ]);
 
         var scorer = new MakiRollScorer();
 
         var makiScores = scorer.Score(new List<Tableau> { player1Tableau, player2Tableau });
-        
+
         Assert.Equal(0, makiScores["P2"]);
         Assert.Equal(0, makiScores["P1"]);
     }

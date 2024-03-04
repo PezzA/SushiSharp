@@ -6,8 +6,8 @@ using SushiSharp.Cards;
 using SushiSharp.Cards.Decks;
 using SushiSharp.Cards.Shufflers;
 using SushiSharp.Game.Actors.ClientWriter;
-using SushiSharp.Game.ViewModels;
-using SushiSharp.Web.Actors.Game;
+using SushiSharp.Game.Models;
+using SushiSharp.Game.Players;
 
 namespace SushiSharp.Game.Actors.Game;
 

@@ -1,4 +1,6 @@
-﻿namespace SushiSharp.Game.ViewModels;
+﻿using SushiSharp.Game.Players;
+
+namespace SushiSharp.Game.Models;
 
 public class PublicVisible
 {

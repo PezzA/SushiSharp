@@ -33,9 +33,6 @@
       <Content Include="..\.dockerignore">
         <Link>.dockerignore</Link>
       </Content>
-      <Content Update="wwwroot\sushi.css">
-        <DependentUpon>favicon.png</DependentUpon>
-      </Content>
     </ItemGroup>
 
     <ItemGroup>
@@ -85,6 +82,8 @@
       <_ContentIncludedByDefault Remove="Components\Game\Setup.razor" />
       <_ContentIncludedByDefault Remove="Components\Game\Tableau.razor" />
       <_ContentIncludedByDefault Remove="Components\Chat\Chat.razor" />
+      <_ContentIncludedByDefault Remove="wwwroot\bootstrap\bootstrap.min.css" />
+      <_ContentIncludedByDefault Remove="wwwroot\bootstrap\bootstrap.min.css.map" />
     </ItemGroup>
 
     <ItemGroup>
