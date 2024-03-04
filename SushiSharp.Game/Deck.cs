@@ -3,35 +3,25 @@ using SushiSharp.Cards.Shufflers;
 
 namespace SushiSharp.Game;
 
-public class Deck
+public class Deck(ICardShuffler cardShuffler, List<Card> cards)
 {
-    private readonly ICardShuffler _cardShuffler;
-    private List<Card> _cards;
-
-    public Deck(ICardShuffler cardShuffler, List<Card> cards)
-    {
-        _cardShuffler = cardShuffler;
-        _cards = cards;
-    }
-
-
     public void Shuffle()
     {
-        _cards = _cardShuffler.Shuffle(_cards.ToList());
+        cards = cardShuffler.Shuffle(cards.ToList());
     }
 
     public (List<Card> cards, bool endOfDeck) Draw(int numberToDraw)
     {
-        var numberToTake = _cards.Count < numberToDraw
-            ? _cards.Count
+        var numberToTake = cards.Count < numberToDraw
+            ? cards.Count
             : numberToDraw;
 
-        var cards = _cards.TakeLast(numberToTake);
+        var cards1 = cards.TakeLast(numberToTake);
         
-        _cards.RemoveRange(_cards.Count - numberToTake, numberToTake);
+        cards.RemoveRange(cards.Count - numberToTake, numberToTake);
         
-        return (cards.ToList(), _cards.Count == 0);
+        return (cards1.ToList(), cards.Count == 0);
     }
 
-    public int CardsRemaining() => _cards.Count;
+    public int CardsRemaining() => cards.Count;
 }

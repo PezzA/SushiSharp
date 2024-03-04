@@ -5,11 +5,11 @@ using Newtonsoft.Json;
 using SushiSharp.Cards;
 using SushiSharp.Cards.Decks;
 using SushiSharp.Cards.Shufflers;
-using SushiSharp.Game;
+using SushiSharp.Game.Actors.ClientWriter;
 using SushiSharp.Game.ViewModels;
-using SushiSharp.Web.Actors.HubWriter;
+using SushiSharp.Web.Actors.Game;
 
-namespace SushiSharp.Web.Actors.Game;
+namespace SushiSharp.Game.Actors.Game;
 
 /// <summary>
 /// GameActor holds all the state for an individual game
@@ -25,7 +25,7 @@ public class GameActor : ReceiveActor
     /// <summary>
     /// Data that can be viewed in the game list.
     /// </summary>
-    private readonly PublicVisible _publicGameData;
+    private PublicVisible _publicGameData;
 
     /// <summary>
     /// Player who created the game
@@ -73,24 +73,31 @@ public class GameActor : ReceiveActor
         _hubWriterActor = hubWriterActor;
         _creator = creator;
         _gameId = gameId;
-
+        
         _publicGameData = new PublicVisible
         {
             Players = [_creator], Id = _gameId, Status = GameStatus.SettingUp, Parameters = new GameParameters(2)
         };
-
+        
         Receive<GameActorMessages.StartGameRequest>(StartGame);
+        Receive<GameActorMessages.CreateGameRequest>(CreateGame);
         Receive<GameActorMessages.JoinGameRequest>(JoinGame);
         Receive<GameActorMessages.GamePlayRequest>(GamePlay);
     }
 
-    protected override void PreStart()
+
+    private void CreateGame(GameActorMessages.CreateGameRequest message)
     {
-        _hubWriterActor.Tell(new HubWriterActorMessages.AddToGroup(_gameId, _creator.ConnectionId));
+        _publicGameData = new PublicVisible
+        {
+            Players = [_creator], Id = _gameId, Status = GameStatus.SettingUp, Parameters = new GameParameters(2)
+        };
+        
+        Sender.Tell(new GameActorMessages.UpdateGameNotification(_publicGameData));
+        
+        _hubWriterActor.Tell(new ClientWriterActorMessages.AddToGroup(_gameId, _creator.ConnectionId));
 
-        Context.Parent.Tell(new GameActorMessages.UpdateGameNotification(_publicGameData));
-
-        _hubWriterActor.Tell(new HubWriterActorMessages.WriteClient(
+        _hubWriterActor.Tell(new ClientWriterActorMessages.WriteClient(
             _creator.ConnectionId,
             ServerMessages.SetPlayerGame,
             JsonConvert.SerializeObject(_publicGameData)));
@@ -147,7 +154,7 @@ public class GameActor : ReceiveActor
             ScoreGame();
             _publicGameData.Status = GameStatus.Results;
 
-            Context.Parent.Tell(new GameActorMessages.UpdateGameNotification(_publicGameData));
+            Sender.Tell(new GameActorMessages.UpdateGameNotification(_publicGameData));
             return;
         }
 
@@ -162,6 +169,12 @@ public class GameActor : ReceiveActor
         if (!_awaitingPlay)
         {
             SendError(message.Player.ConnectionId, "Game is not expecting a play message.");
+            return;
+        }
+
+        if (message.Played == null || !message.Played.Any())
+        {
+            SendError(message.Player.ConnectionId, "Play was null or contained no cards.");
             return;
         }
 
@@ -186,7 +199,7 @@ public class GameActor : ReceiveActor
 
     private void SendError(string connectionId, string message)
     {
-        _hubWriterActor.Tell(new HubWriterActorMessages.WriteClient(
+        _hubWriterActor.Tell(new ClientWriterActorMessages.WriteClient(
             connectionId,
             ServerMessages.ErrorMessage,
             message));
@@ -208,16 +221,17 @@ public class GameActor : ReceiveActor
 
         _publicGameData.Players.Add(message.Player);
 
-        _hubWriterActor.Tell(new HubWriterActorMessages.AddToGroup(
+        _hubWriterActor.Tell(new ClientWriterActorMessages.AddToGroup(
             message.GameId,
             message.Player.ConnectionId));
 
-        _hubWriterActor.Tell(new HubWriterActorMessages.WriteGroup(
+        _hubWriterActor.Tell(new ClientWriterActorMessages.WriteGroup(
             _publicGameData.Id,
             ServerMessages.SetPlayerGame,
             JsonConvert.SerializeObject(_publicGameData)));
 
-        Context.Parent.Tell(new GameActorMessages.UpdateGameNotification(_publicGameData));
+        Sender.Tell(new GameActorMessages.UpdateGameNotification(_publicGameData));
+        
     }
 
     private void DealCards()
@@ -246,7 +260,7 @@ public class GameActor : ReceiveActor
     {
         var statii = _publicGameData.Players.ToDictionary(p => p.Id, p => _playerTurnList.ContainsKey(p.Id));
 
-        _hubWriterActor.Tell(new HubWriterActorMessages.WriteGroup(
+        _hubWriterActor.Tell(new ClientWriterActorMessages.WriteGroup(
             _gameId,
             ServerMessages.SetPlayerTurnStatus,
             JsonConvert.SerializeObject(statii)));
@@ -256,7 +270,7 @@ public class GameActor : ReceiveActor
     {
         foreach (var player in _publicGameData.Players)
         {
-            _hubWriterActor.Tell(new HubWriterActorMessages.WriteClient(
+            _hubWriterActor.Tell(new ClientWriterActorMessages.WriteClient(
                 player.ConnectionId,
                 ServerMessages.SetPlayerVisibleData,
                 JsonConvert.SerializeObject(GetPlayerVisibleData(player.Id))));
@@ -265,12 +279,12 @@ public class GameActor : ReceiveActor
 
     private void SendFullBoardState()
     {
-        _hubWriterActor.Tell(new HubWriterActorMessages.WriteGroup(
+        _hubWriterActor.Tell(new ClientWriterActorMessages.WriteGroup(
             _gameId,
             ServerMessages.SetPlayerGame,
             JsonConvert.SerializeObject(_publicGameData)));
 
-        _hubWriterActor.Tell(new HubWriterActorMessages.WriteGroup(
+        _hubWriterActor.Tell(new ClientWriterActorMessages.WriteGroup(
             _gameId,
             ServerMessages.SetViewerVisibleData,
             JsonConvert.SerializeObject(GetViewerVisibleData())));
@@ -303,7 +317,7 @@ public class GameActor : ReceiveActor
     private void StartGame(GameActorMessages.StartGameRequest message)
     {
         _publicGameData.Status = GameStatus.Running;
-        Context.Parent.Tell(new GameActorMessages.UpdateGameNotification(_publicGameData));
+        Sender.Tell(new GameActorMessages.UpdateGameNotification(_publicGameData));
 
         foreach (var player in _publicGameData.Players)
         {

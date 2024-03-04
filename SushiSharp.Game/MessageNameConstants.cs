@@ -1,4 +1,4 @@
-﻿namespace SushiSharp.Web;
+﻿namespace SushiSharp.Game;
 
 public static class ServerMessages
 {

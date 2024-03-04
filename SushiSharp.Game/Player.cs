@@ -4,17 +4,16 @@ namespace SushiSharp.Game;
 
 public class Player
 {
-    public Player()
+    public Player(string connectionId, string userName, string id = "") : base()
     {
-    }
-
-    public Player(string connectionId, string userName) : base()
-    {
+        Id = string.IsNullOrEmpty(id)
+            ? Guid.NewGuid().ToString()
+            : id;
         ConnectionId = connectionId;
         Name = userName;
     }
 
-    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string Id { get; set; }
 
     public string ConnectionId { get; set; } = String.Empty;
 
