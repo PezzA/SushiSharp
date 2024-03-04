@@ -5,8 +5,7 @@ using Newtonsoft.Json;
 using SushiSharp.Cards.Shufflers;
 using SushiSharp.Game.Actors.ClientWriter;
 using SushiSharp.Game.Actors.Game;
-using SushiSharp.Game.ViewModels;
-using SushiSharp.Web.Actors.Game;
+using SushiSharp.Game.Models;
 
 namespace SushiSharp.Game.Actors.GameManager;
 

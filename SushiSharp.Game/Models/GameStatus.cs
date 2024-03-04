@@ -1,4 +1,4 @@
-﻿namespace SushiSharp.Game;
+﻿namespace SushiSharp.Game.Models;
 
 public enum GameStatus
 {

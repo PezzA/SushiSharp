@@ -1,6 +1,4 @@
-﻿using SushiSharp.Cards;
-
-namespace SushiSharp.Game;
+﻿namespace SushiSharp.Cards;
 
 public enum MenuSlot
 {

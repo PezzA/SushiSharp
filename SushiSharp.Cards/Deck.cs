@@ -1,7 +1,6 @@
-﻿using SushiSharp.Cards;
-using SushiSharp.Cards.Shufflers;
+﻿using SushiSharp.Cards.Shufflers;
 
-namespace SushiSharp.Game;
+namespace SushiSharp.Cards;
 
 public class Deck(ICardShuffler cardShuffler, List<Card> cards)
 {

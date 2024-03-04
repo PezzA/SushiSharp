@@ -1,6 +1,6 @@
 ﻿using SushiSharp.Cards;
 
-namespace SushiSharp.Game.ViewModels;
+namespace SushiSharp.Game.Models;
 
 public class PlayerVisible 
 {

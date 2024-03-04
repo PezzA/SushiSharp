@@ -1,8 +1,8 @@
 ﻿using SushiSharp.Cards;
-using SushiSharp.Game;
-using SushiSharp.Game.ViewModels;
+using SushiSharp.Game.Models;
+using SushiSharp.Game.Players;
 
-namespace SushiSharp.Web.Actors.Game;
+namespace SushiSharp.Game.Actors.Game;
 
 public abstract class GameActorMessages
 {

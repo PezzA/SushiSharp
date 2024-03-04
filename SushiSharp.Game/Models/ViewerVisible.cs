@@ -1,4 +1,4 @@
-﻿namespace SushiSharp.Game.ViewModels;
+﻿namespace SushiSharp.Game.Models;
 
 public class ViewerVisible
 {

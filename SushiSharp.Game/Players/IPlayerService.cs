@@ -1,4 +1,4 @@
-﻿namespace SushiSharp.Game;
+﻿namespace SushiSharp.Game.Players;
 
 public interface IPlayerService
 {
