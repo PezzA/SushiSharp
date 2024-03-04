@@ -3,16 +3,17 @@
 using Newtonsoft.Json;
 
 using SushiSharp.Cards.Shufflers;
+using SushiSharp.Game.Actors.ClientWriter;
+using SushiSharp.Game.Actors.Game;
 using SushiSharp.Game.ViewModels;
 using SushiSharp.Web.Actors.Game;
-using SushiSharp.Web.Actors.HubWriter;
 
-namespace SushiSharp.Web.Actors.GameManager;
+namespace SushiSharp.Game.Actors.GameManager;
 
 public class GameManagerActor : ReceiveActor
 {
     private readonly ICardShuffler _cardShuffler;
-    private readonly IActorRef _clientWriteActor;
+    private readonly IActorRef _clientWriterActor;
 
     private readonly Dictionary<string, IActorRef> _gameActorList = [];
     private readonly Dictionary<string, PublicVisible> _gameDataList = [];
@@ -20,7 +21,7 @@ public class GameManagerActor : ReceiveActor
     public GameManagerActor(ICardShuffler cardShuffler, IActorRef clientWriteActor)
     {
         _cardShuffler = cardShuffler;
-        _clientWriteActor = clientWriteActor;
+        _clientWriterActor = clientWriteActor;
         Receive<GameActorMessages.CreateGameRequest>(CreateGame);
         Receive<GameActorMessages.JoinGameRequest>(JoinGame);
         Receive<GameActorMessages.LeaveGameRequest>(LeaveGame);
@@ -34,7 +35,7 @@ public class GameManagerActor : ReceiveActor
     {
         var gameList = _gameDataList.Select(entry => entry.Value).ToArray();
 
-        _clientWriteActor.Tell(new HubWriterActorMessages.WriteClient(message.Player.ConnectionId,
+        _clientWriterActor.Tell(new ClientWriterActorMessages.WriteClient(message.Player.ConnectionId,
             ServerMessages.GameList,
             JsonConvert.SerializeObject(gameList)));
     }
@@ -45,7 +46,10 @@ public class GameManagerActor : ReceiveActor
 
         var gameList = _gameDataList.Select(entry => entry.Value).ToArray();
 
-        _clientWriteActor.Tell(new HubWriterActorMessages.WriteAll(ServerMessages.GameList,
+        // Debug to enable test.
+        Sender?.Tell(message);
+
+        _clientWriterActor.Tell(new ClientWriterActorMessages.WriteAll(ServerMessages.GameList,
             JsonConvert.SerializeObject(gameList)));
     }
 
@@ -54,8 +58,10 @@ public class GameManagerActor : ReceiveActor
         var gameId = Guid.NewGuid().ToString();
 
         var gameActor = Context.ActorOf(Props.Create(
-            () => new GameActor(_cardShuffler, _clientWriteActor, message.Player, gameId)));
+            () => new GameActor(_cardShuffler, _clientWriterActor, message.Player, gameId)));
 
+        gameActor.Tell(message);
+        
         _gameActorList[gameId] = gameActor;
     }
 
@@ -63,7 +69,7 @@ public class GameManagerActor : ReceiveActor
     {
         if (!_gameActorList.ContainsKey(message.GameId))
         {
-            _clientWriteActor.Tell(new HubWriterActorMessages.WriteClient(message.Player.ConnectionId,
+            _clientWriterActor.Tell(new ClientWriterActorMessages.WriteClient(message.Player.ConnectionId,
                 ServerMessages.ErrorMessage, $"{typeof(T)}: Game could not be found.  GameId :{message.GameId}"));
 
             return;
@@ -82,7 +88,7 @@ public class GameManagerActor : ReceiveActor
     {
         if (!_gameActorList.ContainsKey(message.GameId))
         {
-            _clientWriteActor.Tell(new HubWriterActorMessages.WriteClient(message.Player.ConnectionId,
+            _clientWriterActor.Tell(new ClientWriterActorMessages.WriteClient(message.Player.ConnectionId,
                 ServerMessages.ErrorMessage, $"GamePlayRequest: Game could not be found.  GameId :{message.GameId}"));
 
             return;

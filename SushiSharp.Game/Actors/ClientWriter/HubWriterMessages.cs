@@ -1,6 +1,6 @@
-﻿namespace SushiSharp.Web.Actors.HubWriter;
+﻿namespace SushiSharp.Game.Actors.ClientWriter;
 
-public abstract class HubWriterActorMessages
+public abstract class ClientWriterActorMessages
 {
     public record WriteClient(string ConnectionId, string Message, string Payload);
 

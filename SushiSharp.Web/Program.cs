@@ -11,8 +11,7 @@ using MudBlazor.Services;
 using SushiSharp.Cards.Shufflers;
 using SushiSharp.Game;
 using SushiSharp.Game.Chat;
-using SushiSharp.Web.Actors;
-using SushiSharp.Web.Actors.GameManager;
+using SushiSharp.Game.Actors.GameManager;
 using SushiSharp.Web.Actors.HubWriter;
 using SushiSharp.Web.Hubs;
 using SushiSharp.Web.Components;
@@ -44,7 +43,7 @@ builder.Services.AddAkka("MyActorSystem", configurationBuilder =>
         {
             var hubWriteActor =
                 system.ActorOf(
-                    Props.Create(() => new HubWriterActor(resolver.GetService<IHubContext<LobbyHub>>())),
+                    Props.Create(() => new HubClientWriterActor(resolver.GetService<IHubContext<LobbyHub>>())),
                     "LobbyHubWrite");
 
             var gameManagerActor =
