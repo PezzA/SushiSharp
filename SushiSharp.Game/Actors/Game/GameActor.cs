@@ -84,7 +84,8 @@ public class GameActor : ReceiveActor
 
     private readonly Dictionary<string, int> _finalScores = [];
 
-    public GameActor(ICardShuffler cardShuffler, Dictionary<CardType, IScorer> scorers, IActorRef hubWriterActor, Player creator, string? gameId = null)
+    public GameActor(ICardShuffler cardShuffler, Dictionary<CardType, IScorer> scorers, IActorRef hubWriterActor,
+        Player creator, string? gameId = null)
     {
         _cardShuffler = cardShuffler;
         _scorers = scorers;
@@ -155,7 +156,7 @@ public class GameActor : ReceiveActor
             _playerBoardStates[playerIndexes[i]].Hand = _playerBoardStates[playerIndexes[i + 1]].Hand;
         }
 
-        _playerBoardStates[playerIndexes[_players.Count]].Hand = memoHand;
+        _playerBoardStates[playerIndexes[_players.Count - 1]].Hand = memoHand;
     }
 
     private bool AllCardsPlayed()
@@ -170,8 +171,7 @@ public class GameActor : ReceiveActor
             .Value
             .Score(_playerBoardStates.Select(kv => kv.Value).ToList());
 
-        var roundScore = new Dictionary<CardType, Dictionary<string, int>>();
-        roundScore.Add(CardType.Pudding, puddingScores);
+        var roundScore = new Dictionary<CardType, Dictionary<string, int>> { { CardType.Pudding, puddingScores } };
 
         _gameScores.Add(4, roundScore);
 
@@ -211,30 +211,26 @@ public class GameActor : ReceiveActor
     private void ScoreRound()
     {
         var roundScores = new Dictionary<CardType, Dictionary<string, int>>();
-        foreach (var (cardType, scorer) in _scorers.Where(s => s.Key != CardType.Pudding))
+
+        foreach ((CardType cardType, IScorer scorer) in _scorers.Where(s => s.Key != CardType.Pudding))
         {
             roundScores.Add(cardType, scorer.Score(_playerBoardStates.Select(kp => kp.Value).ToList()));
         }
-        
+
         _gameScores.Add(_round, roundScores);
     }
 
     private void ProcessHands()
     {
-        foreach (var (player, boardState) in _playerBoardStates)
+        foreach ((_, Tableau boardState) in _playerBoardStates)
         {
-            foreach (var card in boardState.Played)
-            {
-                if (card.Type == CardType.Pudding)
-                {
-                    boardState.Side.Add(card);
-                }
-            }
-
+            // deserts to the side board
             boardState.Side.AddRange(boardState.Played.Where(c => c.Type == CardType.Pudding));
 
+            // everything else to the discard pile
             _discardPile.AddRange(boardState.Played.Where(c => c.Type != CardType.Pudding));
 
+            // empty the played cards
             boardState.Played = [];
         }
     }
@@ -260,7 +256,8 @@ public class GameActor : ReceiveActor
             UpdateGameState();
 
             _playerTurnList = [];
-
+            
+            BroadcastViewerVisibleData();
             BroadCastPlayerVisibleData();
         }
 
@@ -307,7 +304,7 @@ public class GameActor : ReceiveActor
     {
         if (_drawPile == null) throw new InvalidOperationException("No game state or game Deck");
 
-        for (int i = 0; i < 9; i++)
+        for (int i = 0; i < 10; i++)
         {
             foreach (var boardState in _playerBoardStates)
             {
@@ -348,18 +345,26 @@ public class GameActor : ReceiveActor
 
     private void SendFullBoardState()
     {
+        BroadcastPublicVisibleData();
+        BroadcastViewerVisibleData();
+        BroadCastPlayerVisibleData();
+        SendPlayerStatus();
+    }
+
+    private void BroadcastPublicVisibleData()
+    {
         _hubWriterActor.Tell(new ClientWriterActorMessages.WriteGroup(
             _gameId,
             ServerMessages.SetPlayerGame,
             JsonConvert.SerializeObject(GetPublicVisibleData())));
+    }
 
+    private void BroadcastViewerVisibleData()
+    {
         _hubWriterActor.Tell(new ClientWriterActorMessages.WriteGroup(
             _gameId,
             ServerMessages.SetViewerVisibleData,
             JsonConvert.SerializeObject(GetViewerVisibleData())));
-
-        BroadCastPlayerVisibleData();
-        SendPlayerStatus();
     }
 
     private PlayerVisible GetPlayerVisibleData(string playerId) =>

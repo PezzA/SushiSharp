@@ -1,0 +1,12 @@
+﻿@using SushiSharp.Cards;
+    
+@foreach (var (index, card) in Cards.Select((card, index) => (index, card)))
+{
+    <TableCard @key="card.Id" X="XOffSet+(50* index)" Y="YOffSet" SushiTableCard="card" CanSelect="false" />
+}
+
+@code {
+    [Parameter] public required List<Card> Cards { get; set; }
+    [Parameter] public required int XOffSet { get; set; }
+    [Parameter] public required int YOffSet { get; set; }
+}

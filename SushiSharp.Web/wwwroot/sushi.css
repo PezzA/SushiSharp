@@ -1,42 +1,37 @@
 ﻿.sushi-card {
     background-image: url("OtherAssets/cards.jpg");
     background-position: -815px -400px;
-    width: 269px;
-    height: 399px;
+    
     position: absolute;
+    
     border: 1px black solid;
     border-radius: 9px;
+    
     z-index: 0;
+    
     transform-origin: center;
+    transition: all .2s ease-in-out;
 }
 
 .dimmed {
-    transition: all .2s ease-in-out;
     opacity: 75%;
 }
 
 .selected {
-    transition: all .2s ease-in-out;
-    transform: scale(0.5) rotate(0) !important;
-    border: 4px solid limegreen !important;
+    transform: scale(0.45) rotate(0) !important;
+    border: 5px solid limegreen !important;
     z-index: 1 !important;
-    box-shadow: 30px 30px 50px black !important;
+    box-shadow: 30px 30px 40px black !important;
 }
 
 .grow {
-    transition: all .2s ease-in-out;
     cursor:pointer;
 
     &:hover {
-        transform: scale(0.6) rotate(2deg);
-        border: 4px solid coral;
-        z-index: 1;
-        box-shadow: 40px 50px 75px black;
+        transform: scale(0.5) rotate(2deg) !important;
+        z-index: 1 !important;
+        box-shadow: 40px 50px 60px black !important;
     }
-}
-
-.small {
-    transform: scale(0.4);
 }
 
 .egg-nagiri {
@@ -93,7 +88,7 @@
 
 .sushi-board {
     position: relative;
-    width: 1000px;
+    width: 1200px;
     height: 800px;
     background-color: lightgrey;
 }

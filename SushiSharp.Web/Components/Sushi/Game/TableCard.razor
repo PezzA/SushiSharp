@@ -1,31 +1,29 @@
 ﻿@using SushiSharp.Cards
 @using Microsoft.AspNetCore.Mvc.Filters
+@using SushiSharp.Web.Setup
 
-<div 
-    class="sushi-card small @CardClass() @CanGrow() @Selected()" 
-    style="top:@X.ToString()px;left: @Y.ToString()px;"
-    @onclick="ClickCard"></div>
+
+<div
+    class="sushi-card @CardClass() @State()"
+    style="width:@(BoardSettings.CardWidth)px; height:@(BoardSettings.CardHeight)px; left:@(Left - BoardSettings.ScaledCardWidthOffSet)px;top: @(Top - BoardSettings.ScaledCardHeightOffSet)px; transform: scale(@BoardSettings.CardScale)"
+    @onclick="ClickCard">
+</div>
 
 @code {
     [Parameter] public required Card SushiTableCard { get; set; }
-    [Parameter] public required int X { get; set; }
-    [Parameter] public required int Y { get; set; }
+    [Parameter] public required int Left { get; set; }
+    [Parameter] public required int Top { get; set; }
     [Parameter] public required bool CanSelect { get; set; }
     [Parameter] public required bool IsPicked { get; set; }
     [Parameter] public EventCallback<TableCardSelectArgs> SelectChange { get; set; }
 
-    private string CanGrow()
+    private string State()
     {
-        return CanSelect || IsPicked
-            ? "grow"
-            : "dimmed";
-    }
+        if (!CanSelect && !IsPicked) return "dimmed";
 
-    private string Selected()
-    {
         return IsPicked
             ? "selected"
-            : string.Empty;
+            : "grow";
     }
 
     private string CardClass()

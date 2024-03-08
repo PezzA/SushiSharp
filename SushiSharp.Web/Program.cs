@@ -53,11 +53,11 @@ builder.Services.AddAkka("MyActorSystem", configurationBuilder =>
             Dictionary<CardType, IScorer> scorers = new()
             {
                 { CardType.Dumpling, new DumplingScorer() },
-                { CardType.Dumpling, new MakiRollScorer() },
-                { CardType.Dumpling, new NagiriScorer() },
-                { CardType.Dumpling, new PuddingScorer() },
-                { CardType.Dumpling, new SashimiScorer() },
-                { CardType.Dumpling, new TempuraScorer() },
+                { CardType.MakiRolls, new MakiRollScorer() },
+                { CardType.Nagiri, new NagiriScorer() },
+                { CardType.Pudding, new PuddingScorer() },
+                { CardType.Sashimi, new SashimiScorer() },
+                { CardType.Tempura, new TempuraScorer() },
             };
 
 
