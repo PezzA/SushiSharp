@@ -4,7 +4,7 @@ public class BoardSettings
 {
     public const int BoardWidth = 1200;
     public const int BoardHeight = 800;
-    public const float CardScale = 0.4f;
+    public const float CardScale = 0.3f;
     public const int CardWidth = 270;
     public const int CardHeight = 400;
 
@@ -14,6 +14,6 @@ public class BoardSettings
     public static int ScaledCardHeightOffSet => (int)(CardHeight * CardScaleRatio);
 
     public static int ScaledCardWidth => (int)(CardWidth * CardScale);
-    public static int ScaledCardHeight => (int)(CardWidth * CardScale);
+    public static int ScaledCardHeight => (int)(CardHeight * CardScale);
 
 }

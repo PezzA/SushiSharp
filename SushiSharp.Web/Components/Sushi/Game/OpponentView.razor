@@ -1,12 +1,17 @@
 ﻿@using SushiSharp.Cards;
-    
+@using SushiSharp.Web.Setup
+
 @foreach (var (index, card) in Cards.Select((card, index) => (index, card)))
 {
-    <TableCard @key="card.Id" X="XOffSet+(50* index)" Y="YOffSet" SushiTableCard="card" CanSelect="false" />
+    <TableCard @key="card.Id"
+               Left="LeftOffSet + ((BoardSettings.ScaledCardWidth + BoardSettings.CardGapNormal) * index)"
+               Top="TopOffSet"
+               SushiTableCard="card"
+               ViewOnly="true"/>
 }
 
 @code {
     [Parameter] public required List<Card> Cards { get; set; }
-    [Parameter] public required int XOffSet { get; set; }
-    [Parameter] public required int YOffSet { get; set; }
+    [Parameter] public required int LeftOffSet { get; set; }
+    [Parameter] public required int TopOffSet { get; set; }
 }

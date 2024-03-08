@@ -198,14 +198,15 @@ public class GameActor : ReceiveActor
         if (_round == 3)
         {
             ScoreGame();
+            BroadcastViewerVisibleData();
             SetGameStatus(GameStatus.Results);
             NotifyGameChanged();
+            return;
         }
-        else
-        {
-            DealCards();
-            _round += 1;
-        }
+
+        DealCards();
+        BroadcastViewerVisibleData();
+        _round += 1;
     }
 
     private void ScoreRound()
@@ -256,7 +257,7 @@ public class GameActor : ReceiveActor
             UpdateGameState();
 
             _playerTurnList = [];
-            
+
             BroadcastViewerVisibleData();
             BroadCastPlayerVisibleData();
         }
@@ -385,7 +386,9 @@ public class GameActor : ReceiveActor
                 k => new OpponentState
                 {
                     HandSize = k.Value.Hand.Count, Sideboard = k.Value.Side, Played = k.Value.Played
-                })
+                }),
+            GameScores = _gameScores,
+            FinalScores = _finalScores
         };
 
     private void NotifyGameChanged() =>

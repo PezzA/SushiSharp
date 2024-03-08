@@ -2,14 +2,23 @@
 @using Microsoft.EntityFrameworkCore.Scaffolding
 @using SushiSharp.Web.Setup
 
-@foreach (var card in Hand.Select((value, index) => new { index, value }))
+@foreach (var (index, card) in Hand.Select((value, index) => ( index, value )))
 {
-    <TableCard @key="card.value.Id"  Left="LeftOffSet + (card.index * CardOffSet)" Top="TopOffSet" SushiTableCard="card.value" CanSelect="!MaxCardSelected()" SelectChange="SelectCard"></TableCard>
+    <TableCard @key="card.Id"  
+               Left="LeftOffSet + (index * _cardOffSet)" 
+               Top="TopOffSet" 
+               SushiTableCard="card" 
+               CanSelect="!MaxCardSelected()" 
+               SelectChange="SelectCard"></TableCard>
 }
 
-<div style="position: absolute; top:@(TopOffSet+250)px; left:0">
+<div style="position: absolute; top:@(TopOffSet+200)px; left:0">
     <span>@SelectionText()</span>
-    <MudButton Disabled="CurrentPlay.Count == 0" ButtonType="ButtonType.Button" Variant="Variant.Filled" Color="Color.Primary" @onclick="Submit">Play!</MudButton>
+    <MudButton Disabled="CurrentPlay.Count == 0" 
+               ButtonType="ButtonType.Button" 
+               Variant="Variant.Filled" 
+               Color="Color.Primary" 
+               @onclick="Submit">Play!</MudButton>
 </div>
 
 @code {
@@ -20,7 +29,7 @@
     [Parameter] public required int TopOffSet { get; set; }
     [Parameter] public EventCallback<List<Card>> SubmitTurn { get; set; }
 
-    private int CardOffSet = BoardSettings.CardGapNormal + BoardSettings.ScaledCardWidth;
+    private int _cardOffSet = BoardSettings.CardGapNormal + BoardSettings.ScaledCardWidth;
     
     private void SelectCard(TableCard.TableCardSelectArgs args)
     {

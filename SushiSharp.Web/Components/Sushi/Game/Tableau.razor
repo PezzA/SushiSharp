@@ -2,6 +2,7 @@
 @using SushiSharp.Game
 @using Microsoft.EntityFrameworkCore.Metadata.Internal
 @using SushiSharp.Game.Models
+@using SushiSharp.Web.Setup
 
 @if (PlayerState != null && ViewerState != null && TurnState != null)
 {
@@ -20,7 +21,8 @@
 
         @foreach (var opponent in ViewerState.OpponentStates)
         {
-            <div style="position: absolute; top: @((opponentIndex * 200) + 400)px">
+            var opponentTop = ((BoardSettings.ScaledCardHeight + 50) * opponentIndex) + 300;
+            <div style="position: absolute; top: @(opponentTop)px">
                 <PlayerAvatar Player="GameState.Players.First(p => p.Id == opponent.Key)"/>
 
                 @if (TurnState.TryGetValue(opponent.Key, out var played) && played)
@@ -31,13 +33,31 @@
                 {
                     <MudIcon Icon="@Icons.Material.TwoTone.HourglassBottom" Title="Play Not Submitted" Color="Color.Warning" Size="Size.Large"/>
                 }
-                <OpponentView Cards="opponent.Value.Played" XOffSet="0" YOffSet="300 * opponentIndex"/>
             </div>
+            <OpponentView Cards="opponent.Value.Played" LeftOffSet="100" TopOffSet="opponentTop"/>
 
 
             opponentIndex += 1;
         }
     </Board>
+    
+    <h2>Scores</h2>
+
+    foreach (var round in ViewerState.GameScores)
+    {
+        <RoundScore RoundNumber="round.Key" Scores="round.Value" Players="GameState.Players"/>
+    }
+
+    if (ViewerState.FinalScores.Any())
+    {
+        <h2>Final Scores</h2>
+        var puddingDict = new Dictionary<CardType, Dictionary<string, int>>()
+        {
+            { CardType.Pudding, ViewerState.FinalScores }
+        };
+        <RoundScore RoundNumber="4" Scores="puddingDict" Players="GameState.Players"/>
+    }
+
 }
 else
 {
