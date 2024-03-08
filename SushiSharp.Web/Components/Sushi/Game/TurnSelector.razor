@@ -1,25 +1,36 @@
 ﻿@using SushiSharp.Cards
 @using Microsoft.EntityFrameworkCore.Scaffolding
+@using SushiSharp.Web.Setup
 
-<div style="position: absolute; top:@(XOffSet)px; left:0">
-    <span>@SelectionText()</span>
-    <MudButton Disabled="CurrentPlay.Count == 0" ButtonType="ButtonType.Button" Variant="Variant.Filled" Color="Color.Primary" @onclick="Submit">Play!</MudButton>
-</div>
-
-@foreach (var card in Hand.Select((value, index) => new { index, value }))
+@foreach (var (index, card) in Hand.Select((value, index) => ( index, value )))
 {
-    <TableCard @key="card.value.Id" X="XOffSet-50" Y="(card.index * 120) + YOffSet" SushiTableCard="card.value" CanSelect="!MaxCardSelected()" SelectChange="SelectCard"></TableCard>
+    <TableCard @key="card.Id"  
+               Left="LeftOffSet + (index * _cardOffSet)" 
+               Top="TopOffSet" 
+               SushiTableCard="card" 
+               CanSelect="!MaxCardSelected()" 
+               SelectChange="SelectCard"></TableCard>
 }
+
+<div style="position: absolute; top:@(TopOffSet+200)px; left:0">
+    <span>@SelectionText()</span>
+    <MudButton Disabled="CurrentPlay.Count == 0" 
+               ButtonType="ButtonType.Button" 
+               Variant="Variant.Filled" 
+               Color="Color.Primary" 
+               @onclick="Submit">Play!</MudButton>
+</div>
 
 @code {
     [Parameter] public required List<Card> Hand { get; set; }
     [Parameter] public required List<Card> CurrentPlay { get; set; }
     [Parameter] public required List<Card> Played { get; set; }
-    [Parameter] public required int XOffSet { get; set; }
-    [Parameter] public required int YOffSet { get; set; }
-    
+    [Parameter] public required int LeftOffSet { get; set; }
+    [Parameter] public required int TopOffSet { get; set; }
     [Parameter] public EventCallback<List<Card>> SubmitTurn { get; set; }
 
+    private int _cardOffSet = BoardSettings.CardGapNormal + BoardSettings.ScaledCardWidth;
+    
     private void SelectCard(TableCard.TableCardSelectArgs args)
     {
         if (args.Selected)
@@ -59,5 +70,4 @@
     {
         await SubmitTurn.InvokeAsync(CurrentPlay);
     }
-
 }

@@ -2,6 +2,7 @@ using Akka.Actor;
 using Akka.TestKit.Xunit2;
 
 using SushiSharp.Cards;
+using SushiSharp.Cards.Scoring;
 using SushiSharp.Cards.Shufflers;
 using SushiSharp.Game.Actors.ClientWriter;
 using SushiSharp.Game.Actors.Game;
@@ -31,7 +32,7 @@ public class GameActorValidations : TestKit
 
         var gameId = "TestGameId";
         var gameActorProps = Props.Create(() =>
-            new Actors.Game.GameActor(new RiggedCardShuffler(new List<Card>()), writerProbe, creatorPlayer, gameId));
+            new Actors.Game.GameActor(new RiggedCardShuffler(new List<Card>()), new Dictionary<CardType, IScorer>(),  writerProbe, creatorPlayer, gameId));
 
         var gameActor = Sys.ActorOf(gameActorProps, "gameActor");
 

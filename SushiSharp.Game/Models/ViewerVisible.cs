@@ -1,4 +1,6 @@
-﻿namespace SushiSharp.Game.Models;
+﻿using SushiSharp.Cards;
+
+namespace SushiSharp.Game.Models;
 
 public class ViewerVisible
 {
@@ -6,4 +8,8 @@ public class ViewerVisible
     public int CardsInDeck { get; set; }
     public int CardsInDiscard { get; set; }
     public int RoundNumber { get; set; }
+
+    public Dictionary<int, Dictionary<CardType, Dictionary<string, int>>> GameScores { get; set; } = [];
+
+    public Dictionary<string, int> FinalScores { get; set; } = [];
 }

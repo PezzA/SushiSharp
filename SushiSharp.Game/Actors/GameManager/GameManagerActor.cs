@@ -2,6 +2,8 @@
 
 using Newtonsoft.Json;
 
+using SushiSharp.Cards;
+using SushiSharp.Cards.Scoring;
 using SushiSharp.Cards.Shufflers;
 using SushiSharp.Game.Actors.ClientWriter;
 using SushiSharp.Game.Actors.Game;
@@ -12,14 +14,17 @@ namespace SushiSharp.Game.Actors.GameManager;
 public class GameManagerActor : ReceiveActor
 {
     private readonly ICardShuffler _cardShuffler;
+    private readonly Dictionary<CardType, IScorer> _scorers;
     private readonly IActorRef _clientWriterActor;
 
     private readonly Dictionary<string, IActorRef> _gameActorList = [];
     private readonly Dictionary<string, PublicVisible> _gameDataList = [];
 
-    public GameManagerActor(ICardShuffler cardShuffler, IActorRef clientWriteActor)
+    public GameManagerActor(ICardShuffler cardShuffler, Dictionary<CardType, IScorer> scorers,
+        IActorRef clientWriteActor)
     {
         _cardShuffler = cardShuffler;
+        _scorers = scorers;
         _clientWriterActor = clientWriteActor;
         Receive<GameActorMessages.CreateGameRequest>(CreateGame);
         Receive<GameActorMessages.JoinGameRequest>(JoinGame);
@@ -57,10 +62,10 @@ public class GameManagerActor : ReceiveActor
         var gameId = Guid.NewGuid().ToString();
 
         var gameActor = Context.ActorOf(Props.Create(
-            () => new GameActor(_cardShuffler, _clientWriterActor, message.Player, gameId)));
+            () => new GameActor(_cardShuffler, _scorers, _clientWriterActor, message.Player, gameId)));
 
         gameActor.Tell(message);
-        
+
         _gameActorList[gameId] = gameActor;
     }
 

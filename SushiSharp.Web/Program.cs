@@ -8,8 +8,9 @@ using Microsoft.EntityFrameworkCore;
 
 using MudBlazor.Services;
 
+using SushiSharp.Cards;
+using SushiSharp.Cards.Scoring;
 using SushiSharp.Cards.Shufflers;
-using SushiSharp.Game;
 using SushiSharp.Game.Chat;
 using SushiSharp.Game.Actors.GameManager;
 using SushiSharp.Game.Players;
@@ -31,6 +32,13 @@ builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 
+builder.Services.AddSingleton<IScorer, DumplingScorer>();
+builder.Services.AddSingleton<IScorer, MakiRollScorer>();
+builder.Services.AddSingleton<IScorer, TempuraScorer>();
+builder.Services.AddSingleton<IScorer, SashimiScorer>();
+builder.Services.AddSingleton<IScorer, NagiriScorer>();
+builder.Services.AddSingleton<IScorer, PuddingScorer>();
+
 //builder.Services.AddResponseCompression(opts =>
 //{
 //    opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
@@ -42,15 +50,28 @@ builder.Services.AddAkka("MyActorSystem", configurationBuilder =>
     configurationBuilder
         .WithActors((system, registry, resolver) =>
         {
+            Dictionary<CardType, IScorer> scorers = new()
+            {
+                { CardType.Dumpling, new DumplingScorer() },
+                { CardType.MakiRolls, new MakiRollScorer() },
+                { CardType.Nagiri, new NagiriScorer() },
+                { CardType.Pudding, new PuddingScorer() },
+                { CardType.Sashimi, new SashimiScorer() },
+                { CardType.Tempura, new TempuraScorer() },
+            };
+
+
             var hubWriteActor =
                 system.ActorOf(
                     Props.Create(() => new HubClientWriterActor(resolver.GetService<IHubContext<LobbyHub>>())),
                     "LobbyHubWrite");
 
             var gameManagerActor =
-                system.ActorOf(
-                    Props.Create(() => new GameManagerActor(resolver.GetService<ICardShuffler>(), hubWriteActor)),
-                    "GameManagerActor");
+                    system.ActorOf(
+                        Props.Create(
+                            () => new GameManagerActor(resolver.GetService<ICardShuffler>(), scorers, hubWriteActor)),
+ 
+            "GameManagerActor");
 
             registry.Register<GameManagerActor>(gameManagerActor);
         });
