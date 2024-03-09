@@ -1,16 +1,49 @@
-﻿.sushi-card {
+﻿@keyframes appear {
+    0% {
+        left: -2000px;
+    }
+}
+
+@keyframes disappear {
+    100% {
+        left: 3000px;
+    }
+}
+
+.sushi-card {
     background-image: url("OtherAssets/cards.jpg");
     background-position: -815px -400px;
-    
+
     position: absolute;
-    
+
     border: 1px black solid;
     border-radius: 9px;
-    
+
     z-index: 0;
-    
+
     transform-origin: center;
     transition: all .2s ease-in-out;
+}
+
+.info-box{
+    position: absolute;
+    top: 30px;
+    left: 950px;
+    width: 200px;
+}
+.sweep-right {
+    animation: appear 0.5s ease;
+}
+
+.sweep-left {
+    animation: disappear 0.5s ease;
+}
+
+.deck-size {
+    transform: scale(4);
+    font-weight: bold;
+    color: white;
+    font-size: larger;
 }
 
 .dimmed {
@@ -25,12 +58,13 @@
 }
 
 .grow {
-    cursor:pointer;
+    cursor: pointer;
 
     &:hover {
         transform: scale(0.5) rotate(2deg) !important;
         z-index: 1 !important;
         box-shadow: 40px 50px 60px black !important;
+        border: 5px solid black !important;
     }
 }
 

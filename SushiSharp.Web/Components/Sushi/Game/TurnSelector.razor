@@ -2,23 +2,52 @@
 @using Microsoft.EntityFrameworkCore.Scaffolding
 @using SushiSharp.Web.Setup
 
-@foreach (var (index, card) in Hand.Select((value, index) => ( index, value )))
+@foreach (var (index, card) in Hand.Select((value, index) => (index, value)))
 {
-    <TableCard @key="card.Id"  
-               Left="LeftOffSet + (index * _cardOffSet)" 
-               Top="TopOffSet" 
-               SushiTableCard="card" 
-               CanSelect="!MaxCardSelected()" 
-               SelectChange="SelectCard"></TableCard>
+    <TableCard @key="card.Id"
+               Left="LeftOffSet + (index * _cardOffSet)"
+               Top="TopOffSet"
+               SushiTableCard="card"
+               CanSelect="!MaxCardSelected()"
+               SelectChange="SelectCard">
+    </TableCard>
 }
 
-<div style="position: absolute; top:@(TopOffSet+200)px; left:0">
-    <span>@SelectionText()</span>
-    <MudButton Disabled="CurrentPlay.Count == 0" 
-               ButtonType="ButtonType.Button" 
-               Variant="Variant.Filled" 
-               Color="Color.Primary" 
-               @onclick="Submit">Play!</MudButton>
+<div class="info-box">
+    <MudCard>
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h5">Round : 1</MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            @((MarkupString)SelectionText())
+        </MudCardContent>
+        <MudCardActions>
+            @if (!IsSubmitted)
+            {
+                <MudButton Disabled="CurrentPlay.Count == 0"
+                           ButtonType="ButtonType.Button"
+                           Variant="Variant.Filled"
+                           Color="Color.Warning"
+                           StartIconIcon="@Icons.Material.Filled.Send"
+                           @onclick="Submit">
+                    Lock in!
+                </MudButton>
+            }
+            else
+            {
+                <MudButton Disabled="CurrentPlay.Count == 0"
+                           ButtonType="ButtonType.Button"
+                           Variant="Variant.Filled"
+                           Color="Color.Success"
+                           StartIcon="@Icons.Material.Filled.CheckCircle"
+                           @onclick="Submit">
+                    Change!
+                </MudButton>
+            }
+        </MudCardActions>
+    </MudCard>
 </div>
 
 @code {
@@ -27,10 +56,20 @@
     [Parameter] public required List<Card> Played { get; set; }
     [Parameter] public required int LeftOffSet { get; set; }
     [Parameter] public required int TopOffSet { get; set; }
+
+    [Parameter] public required bool IsSubmitted { get; set; }
     [Parameter] public EventCallback<List<Card>> SubmitTurn { get; set; }
 
     private int _cardOffSet = BoardSettings.CardGapNormal + BoardSettings.ScaledCardWidth;
-    
+
+    protected override void OnParametersSet()
+    {
+        if (CurrentPlay.Count == 0)
+        {
+            IsSubmitted = false;
+        }
+    }
+
     private void SelectCard(TableCard.TableCardSelectArgs args)
     {
         if (args.Selected)
@@ -42,17 +81,22 @@
             CurrentPlay.Remove(args.Card);
         }
     }
-    
+
     private string SelectionText()
     {
+        if (IsSubmitted)
+        {
+            return "Your play is sent! <br /><em>you can still change your play</em>";
+        }
+
         if (MaxCardSelected())
         {
             return "All cards selected, you may lock in your play!";
         }
 
         return _hasChopsticks()
-            ? "You may take a card, and optionally take one additional card in exchange for your chopsticks!"
-            : "You may take a card.";
+            ? "You may play a card, and optionally play one <em>additional</em> card in exchange for your chopsticks!"
+            : "You may play a card.";
     }
 
     private bool MaxCardSelected()
@@ -68,6 +112,8 @@
 
     private async Task Submit()
     {
+        IsSubmitted = true;
         await SubmitTurn.InvokeAsync(CurrentPlay);
     }
+
 }

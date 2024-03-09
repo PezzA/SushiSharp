@@ -8,8 +8,8 @@
 {
     <Board>
         <TurnSelector
-            LeftOffSet="0"
-            TopOffSet="30"
+            LeftOffSet="50"
+            TopOffSet="60"
             Hand="PlayerVisible.Hand"
             CurrentPlay="PlayerVisible.CurrentPlay"
             Played="ViewerVisible.OpponentStates[PlayerVisible.PlayerId].Played"
@@ -22,7 +22,7 @@
         @foreach (var opponent in ViewerVisible.OpponentStates)
         {
             var opponentTop = ((BoardSettings.ScaledCardHeight + 50) * opponentIndex) + 300;
-            <div style="position: absolute; top: @(opponentTop)px">
+            <div style="position: absolute; top: @(opponentTop)px;left: 50px">
                 <PlayerAvatar Player="PublicVisible.Players.First(p => p.Id == opponent.Key)"/>
 
                 @if (TurnState.TryGetValue(opponent.Key, out var played) && played)
@@ -34,8 +34,8 @@
                     <MudIcon Icon="@Icons.Material.TwoTone.HourglassBottom" Title="Play Not Submitted" Color="Color.Warning" Size="Size.Large"/>
                 }
             </div>
-            <OpponentView Cards="opponent.Value.Played" LeftOffSet="100" TopOffSet="opponentTop"/>
 
+            <OpponentView Cards="opponent.Value.Played" Side="opponent.Value.Sideboard" LeftOffSet="150" TopOffSet="opponentTop"/>
 
             opponentIndex += 1;
         }
