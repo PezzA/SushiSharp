@@ -11,12 +11,12 @@ public class MakiRollScorer : IScorer
     {
         if (gameState == null || gameState.Count < 2)
             throw new InvalidDataException("Not Enough tableau's to score maki rolls");
-        
+
         var rollCounts = gameState
-            .Select(tab => 
+            .Select(tab =>
                 MakiRollSymbolCount(tab.Played))
             .Distinct()
-            .OrderByDescending( x=> x)
+            .OrderByDescending(x => x)
             .ToArray();
 
         var scores = new Dictionary<string, int>();
@@ -24,7 +24,7 @@ public class MakiRollScorer : IScorer
         var isSixToEightPlayers = gameState.Count is > 5 and < 9;
 
         foreach (var tab in gameState)
-        { 
+        {
             var makiRollCount = MakiRollSymbolCount(tab.Played);
 
             if (makiRollCount == 0)
@@ -34,7 +34,7 @@ public class MakiRollScorer : IScorer
             }
 
             var score = 0;
-            
+
             // Top points for most rolls (tied)
             if (makiRollCount == rollCounts[0])
             {
@@ -42,17 +42,17 @@ public class MakiRollScorer : IScorer
             }
 
             // Second place Tied, with player count modifier
-            if (makiRollCount == rollCounts[1] && rollCounts.Length > 1)
+            if (rollCounts.Length > 1 && makiRollCount == rollCounts[1])
             {
                 score += isSixToEightPlayers ? 4 : 3;
             }
 
             // If 6 to eight players, score for third place if there are more than 2 distinct results
-            if (rollCounts.Length > 2 &&  makiRollCount == rollCounts[2] &&  isSixToEightPlayers)
+            if (rollCounts.Length > 2 && makiRollCount == rollCounts[2] && isSixToEightPlayers)
             {
                 score += 2;
             }
-            
+
             scores.Add(tab.PlayerId, score);
         }
 

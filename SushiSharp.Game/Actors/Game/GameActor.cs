@@ -1,4 +1,6 @@
-﻿using Akka.Actor;
+﻿using System.ComponentModel;
+
+using Akka.Actor;
 
 using Newtonsoft.Json;
 
@@ -102,6 +104,34 @@ public class GameActor : ReceiveActor
         Receive<GameActorMessages.CreateGameRequest>(CreateGame);
         Receive<GameActorMessages.JoinGameRequest>(JoinGame);
         Receive<GameActorMessages.GamePlayRequest>(GamePlay);
+        Receive<GameActorMessages.LeaveGameRequest>(LeaveGame);
+    }
+
+    private void LeaveGame(GameActorMessages.LeaveGameRequest message)
+    {
+        var playerIndex = _players.FindIndex(p => p.Id == message.Player.Id);
+        
+        if (playerIndex == -1)
+        {
+            SendError(message.Player.ConnectionId, "You are not a member of the game you just tried to leave?");
+            return;
+        }
+
+        if (_status == GameStatus.Running)
+        {
+            SendError(message.Player.ConnectionId, "You cannot leave a game that is running.");
+            return;
+        }
+        
+        _players.RemoveAt(playerIndex);
+        
+        _hubWriterActor.Tell(new ClientWriterActorMessages.RemoveFromGroup(_gameId, message.Player.ConnectionId));
+        _hubWriterActor.Tell(new ClientWriterActorMessages.WriteClient(message.Player.ConnectionId, ServerMessages.SetPlayerGame, string.Empty));
+
+        if ((message.Player.Id == _creator.Id && _status == GameStatus.SettingUp) || _players.Count == 0)
+        {
+            NotifyGameEnded();
+        }
     }
 
     private PublicVisible GetPublicVisibleData() => new PublicVisible
@@ -198,8 +228,9 @@ public class GameActor : ReceiveActor
         if (_round == 3)
         {
             ScoreGame();
-            BroadcastViewerVisibleData();
             SetGameStatus(GameStatus.Results);
+            BroadcastPublicVisibleData();
+            BroadcastViewerVisibleData();
             NotifyGameChanged();
             return;
         }
@@ -392,8 +423,11 @@ public class GameActor : ReceiveActor
         };
 
     private void NotifyGameChanged() =>
-        Sender.Tell(new GameActorMessages.UpdateGameNotification(GetPublicVisibleData()));
+        Context.Parent.Tell(new GameActorMessages.UpdateGameNotification(GetPublicVisibleData()));
 
+    private void NotifyGameEnded() =>
+        Context.Parent.Tell(new GameActorMessages.GameEndedNotification(_gameId));
+    
     private void SetGameStatus(GameStatus status)
     {
         _status = status;

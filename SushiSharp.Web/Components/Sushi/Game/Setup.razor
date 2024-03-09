@@ -13,7 +13,7 @@
             <MudNumericField @bind-Value="_maxPlayers" Label="Maximum Players" Variant="Variant.Text" Min="2" Max="8"/>
         </MudItem>
         <MudGrid>
-            @foreach (var player in GameState.Players)
+            @foreach (var player in PublicVisible.Players)
             {
                 <PlayerSelector GridWidth="6" Player="player"/>
             }
@@ -44,7 +44,7 @@
 
 
 @code {
-    [Parameter] public required PublicVisible GameState { get; set; }
+    [Parameter] public required PublicVisible PublicVisible { get; set; }
     [Parameter] public EventCallback<string> LeaveGame { get; set; }
     [Parameter] public EventCallback<string> StartGame { get; set; }
 
@@ -53,17 +53,17 @@
 
     protected override void OnInitialized()
     {
-        _maxPlayers = GameState.Parameters.MaxPlayers;
-        _maxThinkingTime = GameState.Parameters.MaxTurnTime;
+        _maxPlayers = PublicVisible.Parameters.MaxPlayers;
+        _maxThinkingTime = PublicVisible.Parameters.MaxTurnTime;
     }
 
     private async Task Leave()
     {
-        await LeaveGame.InvokeAsync(GameState.Id);
+        await LeaveGame.InvokeAsync(PublicVisible.Id);
     }
 
     private async Task Start()
     {
-        await StartGame.InvokeAsync(GameState.Id);
+        await StartGame.InvokeAsync(PublicVisible.Id);
     }
 }

@@ -9,7 +9,7 @@ public class PuddingScorer : IScorer
         var rollCounts = gameState
             .Select(tab => tab.Side.Count(s => s.Type == CardType.Pudding))
             .Distinct()
-            .OrderByDescending( x=> x)
+            .OrderByDescending(x => x)
             .ToArray();
 
         foreach (var tab in gameState)
@@ -25,6 +25,10 @@ public class PuddingScorer : IScorer
             if (puddingsForPlayer == rollCounts[^1] && gameState.Count > 2)
             {
                 scores.Add(tab.PlayerId, -6);
+            }
+            else
+            {
+                scores.Add(tab.PlayerId, 0);
             }
         }
 
