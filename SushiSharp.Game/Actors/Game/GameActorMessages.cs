@@ -24,5 +24,7 @@ public abstract class GameActorMessages
 
     public record UpdateGameNotification(PublicVisible GameData) : GameNotification(GameData);
 
+    public record GameEndedNotification(string GameId);
+
     public record GamePlayRequest(Player Player, string GameId, List<Card>? Played);
 }

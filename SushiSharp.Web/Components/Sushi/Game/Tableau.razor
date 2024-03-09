@@ -4,26 +4,26 @@
 @using SushiSharp.Game.Models
 @using SushiSharp.Web.Setup
 
-@if (PlayerState != null && ViewerState != null && TurnState != null)
+@if (PlayerVisible != null && ViewerVisible != null && TurnState != null)
 {
     <Board>
         <TurnSelector
             LeftOffSet="0"
             TopOffSet="30"
-            Hand="PlayerState.Hand"
-            CurrentPlay="PlayerState.CurrentPlay"
-            Played="ViewerState.OpponentStates[PlayerState.PlayerId].Played"
+            Hand="PlayerVisible.Hand"
+            CurrentPlay="PlayerVisible.CurrentPlay"
+            Played="ViewerVisible.OpponentStates[PlayerVisible.PlayerId].Played"
             SubmitTurn="Submit"/>
 
         @{
             var opponentIndex = 0;
         }
 
-        @foreach (var opponent in ViewerState.OpponentStates)
+        @foreach (var opponent in ViewerVisible.OpponentStates)
         {
             var opponentTop = ((BoardSettings.ScaledCardHeight + 50) * opponentIndex) + 300;
             <div style="position: absolute; top: @(opponentTop)px">
-                <PlayerAvatar Player="GameState.Players.First(p => p.Id == opponent.Key)"/>
+                <PlayerAvatar Player="PublicVisible.Players.First(p => p.Id == opponent.Key)"/>
 
                 @if (TurnState.TryGetValue(opponent.Key, out var played) && played)
                 {
@@ -40,24 +40,9 @@
             opponentIndex += 1;
         }
     </Board>
-    
+
     <h2>Scores</h2>
-
-    foreach (var round in ViewerState.GameScores)
-    {
-        <RoundScore RoundNumber="round.Key" Scores="round.Value" Players="GameState.Players"/>
-    }
-
-    if (ViewerState.FinalScores.Any())
-    {
-        <h2>Final Scores</h2>
-        var puddingDict = new Dictionary<CardType, Dictionary<string, int>>()
-        {
-            { CardType.Pudding, ViewerState.FinalScores }
-        };
-        <RoundScore RoundNumber="4" Scores="puddingDict" Players="GameState.Players"/>
-    }
-
+    <RunningResults PublicVisible="PublicVisible" ViewerVisible="ViewerVisible"/>
 }
 else
 {
@@ -65,9 +50,9 @@ else
 }
 
 @code {
-    [Parameter] public required PublicVisible GameState { get; set; }
-    [Parameter] public PlayerVisible? PlayerState { get; set; }
-    [Parameter] public ViewerVisible? ViewerState { get; set; }
+    [Parameter] public required PublicVisible PublicVisible { get; set; }
+    [Parameter] public PlayerVisible? PlayerVisible { get; set; }
+    [Parameter] public ViewerVisible? ViewerVisible { get; set; }
     [Parameter] public Dictionary<string, bool>? TurnState { get; set; }
     [Parameter] public EventCallback<SubmitTurnArgs> SubmitTurn { get; set; }
 
@@ -81,9 +66,10 @@ else
     {
         await SubmitTurn.InvokeAsync(new SubmitTurnArgs
         {
-            GameId = GameState.Id,
+            GameId = PublicVisible.Id,
             Cards = cards
         });
     }
 
 }
+

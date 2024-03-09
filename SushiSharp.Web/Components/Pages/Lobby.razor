@@ -26,21 +26,26 @@
     {
         case GameStatus.SettingUp:
             <Setup
-                GameState="_publicVisible"
+                PublicVisible="_publicVisible"
                 LeaveGame="LeaveGame"
-                StartGame="StartGame"/>
+                StartGame="StartGame"
+                />
             break;
         case GameStatus.Running:
             <Tableau
+                PublicVisible="_publicVisible"
+                PlayerVisible="_playerVisible"
+                ViewerVisible="_viewerVisible"
+                TurnState="_turnStatus"
                 SubmitTurn="SubmitTurn"
-                GameState="_publicVisible"
-                PlayerState="_playerVisible"
-                ViewerState="_viewerVisible"
-                TurnState="_turnStatus"/>
+                />
             break;
         case GameStatus.Results:
             <Results
-                GameState="_publicVisible"/>
+                PublicVisible="_publicVisible"
+                ViewerVisible="_viewerVisible"
+                LeaveGame="LeaveGame"
+                />
             break;
         default:
             throw new InvalidDataException("Unknown game state");

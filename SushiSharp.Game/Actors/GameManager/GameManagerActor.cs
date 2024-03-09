@@ -31,8 +31,25 @@ public class GameManagerActor : ReceiveActor
         Receive<GameActorMessages.LeaveGameRequest>(LeaveGame);
         Receive<GameActorMessages.StartGameRequest>(StartGame);
         Receive<GameActorMessages.UpdateGameNotification>(UpdateGame);
+        ReceiveAsync<GameActorMessages.GameEndedNotification>(EndGame);
         Receive<GameActorMessages.GetGameListRequest>(GetGameList);
         Receive<GameActorMessages.GamePlayRequest>(SubmitTurn);
+    }
+
+    private async Task EndGame(GameActorMessages.GameEndedNotification message)
+    {
+        if (!_gameDataList.ContainsKey(message.GameId))
+        {
+            return;
+        }
+
+        await _gameActorList[message.GameId].GracefulStop(TimeSpan.FromSeconds(10));
+        _gameActorList.Remove(message.GameId);
+        _gameDataList.Remove(message.GameId);
+        
+        var gameList = _gameDataList.Select(entry => entry.Value).ToArray();
+        _clientWriterActor.Tell(new ClientWriterActorMessages.WriteAll(ServerMessages.GameList,
+            JsonConvert.SerializeObject(gameList)));
     }
 
     private void GetGameList(GameActorMessages.GetGameListRequest message)
@@ -62,7 +79,7 @@ public class GameManagerActor : ReceiveActor
         var gameId = Guid.NewGuid().ToString();
 
         var gameActor = Context.ActorOf(Props.Create(
-            () => new GameActor(_cardShuffler, _scorers, _clientWriterActor, message.Player, gameId)));
+            () => new GameActor(_cardShuffler, _scorers, _clientWriterActor, message.Player, gameId)), gameId);
 
         gameActor.Tell(message);
 

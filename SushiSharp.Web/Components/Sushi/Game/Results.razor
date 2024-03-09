@@ -2,8 +2,31 @@
 @using SushiSharp.Game
 @using SushiSharp.Game.Models
 <h3>Results</h3>
+<table>
+    @foreach (var scoreLine in ViewerVisible.FinalScores)
+    {
+        <tr>
+            <td>
+                <PlayerAvatar Player="PublicVisible.Players.Single(p => p.Id == scoreLine.Key)"></PlayerAvatar>
+            </td>
+            <td>@scoreLine.Value point(s)</td>
+        </tr>
+    }
+</table>
+
+<RunningResults PublicVisible="PublicVisible" ViewerVisible="ViewerVisible"></RunningResults>
+
+<div>
+    <MudButton @onclick="Leave" Color="Color.Primary">Leave Game</MudButton>
+</div>
 
 @code {
+    [Parameter] public required PublicVisible PublicVisible { get; set; }
+    [Parameter] public required ViewerVisible ViewerVisible { get; set; }
+    [Parameter] public EventCallback<string> LeaveGame { get; set; }
     
-    [Parameter] public required PublicVisible GameState { get; set; }
+    private async Task Leave()
+    {
+        await LeaveGame.InvokeAsync(PublicVisible.Id);
+    }
 }

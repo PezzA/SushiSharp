@@ -1,15 +1,14 @@
 ﻿@using SushiSharp.Cards
 @using SushiSharp.Game.Players
-<h3>Round @RoundNumber</h3>
 <MudTable Items="@Scores"
-          Hover="true"
+          Dense="true"
           Breakpoint="Breakpoint.Sm"
           LoadingProgressColor="Color.Info">
     <HeaderContent>
         <MudTh></MudTh>
         @foreach (var player in Players)
         {
-            <MudTh>@player.Name</MudTh>
+            <MudTh><PlayerAvatar Player="player" ShowName="true"></PlayerAvatar></MudTh>
         }
     </HeaderContent>
     <RowTemplate>
