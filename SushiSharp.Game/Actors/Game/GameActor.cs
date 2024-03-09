@@ -399,8 +399,14 @@ public class GameActor : ReceiveActor
         _status = status;
     }
 
+
     private void StartGame(GameActorMessages.StartGameRequest message)
     {
+        if (!IsGameValidToStart(message))
+        {
+            return;
+        }
+
         SetGameStatus(GameStatus.Running);
 
         foreach (var player in _players)
@@ -419,5 +425,23 @@ public class GameActor : ReceiveActor
         SendFullBoardState();
 
         _awaitingPlay = true;
+    }
+
+    private bool IsGameValidToStart(GameActorMessages.StartGameRequest message)
+    {
+        if (message.Player.Id != _creator.Id)
+        {
+            SendError(message.Player.ConnectionId, "Only the person who created the game can start the game.");
+            return false;
+        }
+
+        // TODO - Magic number
+        if (_players.Count < 2)
+        {
+            SendError(message.Player.ConnectionId, "A game must have at least 2 players to begin.");
+            return false;
+        }
+
+        return true;
     }
 }
