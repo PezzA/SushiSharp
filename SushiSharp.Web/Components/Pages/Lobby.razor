@@ -4,7 +4,6 @@
 @using Microsoft.AspNetCore.SignalR.Client
 @using Microsoft.AspNetCore.Authorization
 @using Newtonsoft.Json
-@using SushiSharp.Cards
 @using SushiSharp.Game
 @using SushiSharp.Game.Chat
 @using SushiSharp.Game.Models
@@ -29,6 +28,7 @@
                 PublicVisible="_publicVisible"
                 LeaveGame="LeaveGame"
                 StartGame="StartGame"
+                CurrentName="authState.User.Identity?.Name"
                 />
             break;
         case GameStatus.Running:

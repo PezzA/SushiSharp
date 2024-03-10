@@ -27,7 +27,7 @@
         <MenuSelect Slot="MenuSlot.Special1" Xs="12" Default="CardType.Chopsticks" Readonly="true"/>
         <MenuSelect Slot="MenuSlot.Special2" Xs="12" Default="CardType.Wasabi" Readonly="true"/>
         <MenuSelect Slot="MenuSlot.Desert" Xs="12" Default="CardType.Pudding" Readonly="true"/>
-        
+
         <MudItem xs="12">
             <MudSlider Value="@_maxThinkingTime" Min="15" Max="30">Maximum Turn Time (secs) : @_maxThinkingTime </MudSlider>
         </MudItem>
@@ -47,6 +47,7 @@
     [Parameter] public required PublicVisible PublicVisible { get; set; }
     [Parameter] public EventCallback<string> LeaveGame { get; set; }
     [Parameter] public EventCallback<string> StartGame { get; set; }
+    [Parameter] public required string CurrentName { get; set; }
 
     private int _maxPlayers = 0;
     private int _maxThinkingTime = 20;
@@ -66,4 +67,5 @@
     {
         await StartGame.InvokeAsync(PublicVisible.Id);
     }
+
 }
