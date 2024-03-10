@@ -110,7 +110,7 @@ public class GameActor : ReceiveActor
     private void LeaveGame(GameActorMessages.LeaveGameRequest message)
     {
         var playerIndex = _players.FindIndex(p => p.Id == message.Player.Id);
-        
+
         if (playerIndex == -1)
         {
             SendError(message.Player.ConnectionId, "You are not a member of the game you just tried to leave?");
@@ -122,14 +122,24 @@ public class GameActor : ReceiveActor
             SendError(message.Player.ConnectionId, "You cannot leave a game that is running.");
             return;
         }
-        
+
         _players.RemoveAt(playerIndex);
-        
+
         _hubWriterActor.Tell(new ClientWriterActorMessages.RemoveFromGroup(_gameId, message.Player.ConnectionId));
-        _hubWriterActor.Tell(new ClientWriterActorMessages.WriteClient(message.Player.ConnectionId, ServerMessages.SetPlayerGame, string.Empty));
+        _hubWriterActor.Tell(new ClientWriterActorMessages.WriteClient(message.Player.ConnectionId,
+            ServerMessages.SetPlayerGame, string.Empty));
 
         if ((message.Player.Id == _creator.Id && _status == GameStatus.SettingUp) || _players.Count == 0)
         {
+            foreach (var player in _players)
+            {
+                _hubWriterActor.Tell(
+                    new ClientWriterActorMessages.RemoveFromGroup(_gameId, player.ConnectionId));
+                _hubWriterActor.Tell(new ClientWriterActorMessages.WriteClient(player.ConnectionId,
+                    ServerMessages.SetPlayerGame, string.Empty));
+            }
+
+
             NotifyGameEnded();
         }
     }
@@ -427,7 +437,7 @@ public class GameActor : ReceiveActor
 
     private void NotifyGameEnded() =>
         Context.Parent.Tell(new GameActorMessages.GameEndedNotification(_gameId));
-    
+
     private void SetGameStatus(GameStatus status)
     {
         _status = status;
