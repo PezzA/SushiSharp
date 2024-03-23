@@ -10,6 +10,7 @@ public static class ServerMessages
     public const string SetPlayerVisibleData = "SetPlayerVisibleData";
     public const string SetViewerVisibleData = "SetViewerVisibleData";
     public const string SetPlayerTurnStatus = "SetPlayerTurnStatus";
+    public const string SetIdentity = "SetIdentity";
 }
 
 public static class ClientMessage
