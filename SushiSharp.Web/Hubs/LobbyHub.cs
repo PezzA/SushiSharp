@@ -1,20 +1,20 @@
 ﻿using Akka.Actor;
 using Akka.Hosting;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 
 using Newtonsoft.Json;
 
 using SushiSharp.Cards;
-using SushiSharp.Game;
 using SushiSharp.Game.Actors.Game;
 using SushiSharp.Game.Actors.GameManager;
 using SushiSharp.Game.Chat;
 using SushiSharp.Game.Players;
-using SushiSharp.Web.Actors;
 
 namespace SushiSharp.Web.Hubs;
 
+[Authorize]
 public class LobbyHub(IRequiredActor<GameManagerActor> gameManagerActor, IPlayerService playerService) : Hub
 {
     private readonly IActorRef _gameManagerActor = gameManagerActor.ActorRef;
@@ -96,9 +96,18 @@ public class LobbyHub(IRequiredActor<GameManagerActor> gameManagerActor, IPlayer
     
     public Task JoinGame(string gameId) => GenericPlayerGameRequest<GameActorMessages.JoinGameRequest>(gameId);
 
-    public async Task InitClient(string userName, IChatService chatService)
+    public async Task InitClient(IChatService chatService)
     {
-        var player = await playerService.AddPlayer(userName, Context.ConnectionId);
+        var loggedInUserName = Context.User?.Identity?.Name;
+
+        if (string.IsNullOrEmpty(loggedInUserName))
+        {
+            throw new InvalidOperationException("Could no determine logged in user");
+        }
+
+        var player = await playerService.AddPlayer(loggedInUserName, Context.ConnectionId);
+
+        await Clients.Caller.SendAsync("SetIdentity", player.Id);
 
         await BroadcastLobbyChat(chatService, true);
 
