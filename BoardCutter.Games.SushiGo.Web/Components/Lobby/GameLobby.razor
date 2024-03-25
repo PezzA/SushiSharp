@@ -1,0 +1,25 @@
+﻿@using BoardCutter.Games.SushiGo.Models
+@using BoardCutter.Core.Web.Shared.Chat
+<PageTitle>Sushi Lobby</PageTitle>
+
+<h3>GameLobby</h3>
+<MudGrid>
+    <MudItem xs="6">
+        <GameList Games="Games" JoinGame="JoinGame" CreateGame="CreateGame"/>
+    </MudItem>
+    <MudItem xs="6">
+        <Chat Messages="Messages" SendChatMessage="SendChatMessage"/>
+    </MudItem>
+</MudGrid>
+
+@code {
+    [Parameter] public List<ChatMessage> Messages { get; set; } = [];
+
+    [Parameter] public EventCallback<string> SendChatMessage { get; set; }
+
+    [Parameter] public List<PublicVisible> Games { get; set; } = [];
+
+    [Parameter] public EventCallback<string> JoinGame { get; set; }
+
+    [Parameter] public EventCallback CreateGame { get; set; }
+}

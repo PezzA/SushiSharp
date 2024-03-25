@@ -1,0 +1,276 @@
+﻿@page "/lobby"
+@rendermode InteractiveServer
+
+@using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.AspNetCore.Authorization
+@using Newtonsoft.Json
+@using System.Net
+@using BoardCutter.Core.Web.Shared.Chat
+@using BoardCutter.Games.SushiGo.Models
+@using Tableau = BoardCutter.Games.SushiGo.Web.Components.Game.Tableau
+@using BoardCutter.Games.SushiGo
+@implements IAsyncDisposable
+
+
+
+@attribute [Authorize]
+
+@inject NavigationManager Navigation
+@inject IJSRuntime JsRuntime
+@inject ISnackbar Snackbar
+@inject IHttpContextAccessor HttpContextAccessor
+
+@if (_publicVisible != null)
+{
+    switch (_publicVisible.Status)
+    {
+        case GameStatus.SettingUp:
+            <Setup
+                PublicVisible="_publicVisible"
+                LeaveGame="LeaveGame"
+                StartGame="StartGame"
+                CurrentName="authState.User.Identity?.Name"/>
+            break;
+        case GameStatus.Running:
+            <Tableau
+                PublicVisible="_publicVisible"
+                PlayerVisible="_playerVisible"
+                ViewerVisible="_viewerVisible"
+                TurnState="_turnStatus"
+                SubmitTurn="SubmitTurn"/>
+            break;
+        case GameStatus.Results:
+            <Results
+                PublicVisible="_publicVisible"
+                ViewerVisible="_viewerVisible"
+                LeaveGame="LeaveGame"/>
+            break;
+        default:
+            throw new InvalidDataException("Unknown game state");
+    }
+}
+else
+{
+    <GameLobby
+        Games="_gameList"
+        Messages="_messages"
+        SendChatMessage="Send"
+        JoinGame="JoinGame"
+        CreateGame="CreateGame"/>
+}
+
+@code {
+
+    [CascadingParameter(Name = "Cookies")] public Dictionary<string, string>? Cookies { get; set; }
+
+    private HubConnection? _hubConnection;
+
+    // Each private here represents a separately maintainable facet of client state
+    private List<ChatMessage>? _messages = [];
+    private List<PublicVisible> _gameList = [];
+
+    private PublicVisible? _publicVisible;
+    private ViewerVisible? _viewerVisible;
+    private PlayerVisible? _playerVisible;
+    private string _localPlayerId = string.Empty;
+    
+    private Dictionary<string, bool>? _turnStatus = [];
+
+    private async Task Debug(string message)
+    {
+        await JsRuntime.InvokeAsync<string>("console.log", message);
+    }
+
+    private void Toast(string message, Severity severity)
+    {
+        Snackbar.Add(message, severity);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (_hubConnection != null) return;
+
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/lobbyhub"), options =>
+            {
+                if (Cookies == null)
+                {
+                    Cookies = new Dictionary<string, string>();
+                    var cookies = HttpContextAccessor.HttpContext?.Request.Cookies;
+
+                    if (cookies?.Any() == true)
+                    {
+                        foreach (var cookie in cookies)
+                        {
+                            Cookies.Add(cookie.Key, cookie.Value);
+                        }
+                    }
+                }
+
+                options.UseDefaultCredentials = true;
+                var cookieCount = Cookies.Count();
+                var cookieContainer = new CookieContainer(cookieCount);
+                foreach (var cookie in Cookies)
+                    cookieContainer.Add(new Cookie(
+                        cookie.Key,
+                        WebUtility.UrlEncode(cookie.Value),
+                        path: "/",
+                        domain: Navigation.ToAbsoluteUri("/").Host));
+                options.Cookies = cookieContainer;
+
+                foreach (var header in Cookies)
+                    options.Headers.Add(header.Key, header.Value);
+
+                options.HttpMessageHandlerFactory = (input) =>
+                {
+                    var clientHandler = new HttpClientHandler
+                    {
+                        PreAuthenticate = true,
+                        CookieContainer = cookieContainer,
+                        UseCookies = true,
+                        UseDefaultCredentials = true,
+                    };
+                    return clientHandler;
+                };
+            })
+            .Build();
+
+        _hubConnection.On(ServerMessages.SetIdentity, async (string playerId) =>
+        {
+            await Debug($"{ServerMessages.SetIdentity}: {playerId}");
+            _localPlayerId = playerId;
+            await InvokeAsync(StateHasChanged);
+        });
+        
+        _hubConnection.On(ServerMessages.GameList, async (string message) =>
+        {
+            await Debug($"{ServerMessages.GameList}: {message}");
+
+            _gameList = string.IsNullOrEmpty(message)
+                ? []
+                : JsonConvert.DeserializeObject<PublicVisible[]>(message)!.ToList();
+
+            await InvokeAsync(StateHasChanged);
+        });
+
+        _hubConnection.On(ServerMessages.LobbyChat, async (string message) =>
+        {
+            await Debug($"{ServerMessages.LobbyChat}: {message}");
+
+            _messages = string.IsNullOrEmpty(message)
+                ? []
+                : JsonConvert.DeserializeObject<List<ChatMessage>>(message);
+
+            await InvokeAsync(StateHasChanged);
+        });
+
+        _hubConnection.On(ServerMessages.ErrorMessage, async (string message) =>
+        {
+            Toast(message, Severity.Warning);
+            await InvokeAsync(StateHasChanged);
+        });
+
+        _hubConnection.On(ServerMessages.SetPlayerTurnStatus, async (string message) =>
+        {
+            await Debug($"{ServerMessages.SetPlayerTurnStatus}: {message}");
+
+            _turnStatus = string.IsNullOrEmpty(message)
+                ? []
+                : JsonConvert.DeserializeObject<Dictionary<string, bool>>(message);
+
+            await InvokeAsync(StateHasChanged);
+        });
+
+        _hubConnection.On(ServerMessages.SetViewerVisibleData, async (string message) =>
+        {
+            await Debug($"{ServerMessages.SetViewerVisibleData}: {message}");
+
+            _viewerVisible = string.IsNullOrEmpty(message)
+                ? null
+                : JsonConvert.DeserializeObject<ViewerVisible>(message);
+
+            await InvokeAsync(StateHasChanged);
+        });
+
+        _hubConnection.On(ServerMessages.SetPlayerVisibleData, async (string message) =>
+        {
+            await Debug($"{ServerMessages.SetPlayerVisibleData}: {message}");
+
+            _playerVisible = string.IsNullOrEmpty(message)
+                ? null
+                : JsonConvert.DeserializeObject<PlayerVisible>(message);
+
+            await InvokeAsync(StateHasChanged);
+        });
+
+        _hubConnection.On(ServerMessages.SetPlayerGame, async (string message) =>
+        {
+            await Debug($"{ServerMessages.SetPlayerGame}: {message}");
+
+            _publicVisible = string.IsNullOrEmpty(message)
+                ? null
+                : JsonConvert.DeserializeObject<PublicVisible>(message);
+
+            await InvokeAsync(StateHasChanged);
+        });
+
+        await _hubConnection.StartAsync();
+        await _hubConnection.SendAsync(ClientMessage.InitClient);
+    }
+
+    private async Task StartGame(string gameId)
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.SendAsync(ClientMessage.StartGame, gameId);
+        }
+    }
+
+    private async Task JoinGame(string gameId)
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.SendAsync(ClientMessage.JoinGame, gameId);
+        }
+    }
+
+    private async Task CreateGame()
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.SendAsync(ClientMessage.CreateGame);
+        }
+    }
+
+    private async Task Send(string message)
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.SendAsync(ClientMessage.SendLobbyChat, message);
+        }
+    }
+
+    private async Task SubmitTurn(SubmitTurnArgs args)
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.SendAsync(ClientMessage.SubmitTurn, args.GameId, JsonConvert.SerializeObject(args.Cards));
+        }
+    }
+
+    private async Task LeaveGame(string gameId)
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.SendAsync(ClientMessage.LeaveGame, gameId);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.DisposeAsync();
+        }
+    }
+}

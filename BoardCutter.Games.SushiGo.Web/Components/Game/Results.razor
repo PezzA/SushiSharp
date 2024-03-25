@@ -1,0 +1,33 @@
+﻿@using BoardCutter.Games.SushiGo.Models
+<h3>Results</h3>
+<table>
+    @foreach (var scoreLine in ViewerVisible.FinalScores)
+    {
+        <tr>
+            <td>
+                @{
+                    var player = PublicVisible.Players.Single(p => p.Id == scoreLine.Key); 
+                }
+                <PlayerAvatar AvatarPath="@player.AvatarPath()" Name="@player.Name" ></PlayerAvatar>
+            </td>
+            <td>@scoreLine.Value point(s)</td>
+        </tr>
+    }
+</table>
+
+<RunningResults PublicVisible="PublicVisible" ViewerVisible="ViewerVisible"></RunningResults>
+
+<div>
+    <MudButton @onclick="Leave" Color="Color.Primary">Leave Game</MudButton>
+</div>
+
+@code {
+    [Parameter] public required PublicVisible PublicVisible { get; set; }
+    [Parameter] public required ViewerVisible ViewerVisible { get; set; }
+    [Parameter] public EventCallback<string> LeaveGame { get; set; }
+    
+    private async Task Leave()
+    {
+        await LeaveGame.InvokeAsync(PublicVisible.Id);
+    }
+}
