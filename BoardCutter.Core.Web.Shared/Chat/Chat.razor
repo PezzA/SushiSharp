@@ -1,0 +1,37 @@
+﻿@using MudBlazor
+<h3>Chat</h3>
+<MudTable T="ChatMessage" Items="Messages" Breakpoint="Breakpoint.Sm" Bordered="false" Dense="true" Elevation="0">
+        <ColGroup>
+            <col style="width: 20px;" />
+            <col />
+        </ColGroup>
+    <RowTemplate>
+        <MudTd DataLabel="From"><PlayerAvatar Name="@context.PlayerName" AvatarPath="@context.PlayerAvatarPath"></PlayerAvatar></MudTd>
+        <MudTd DataLabel="Message"><b>@context.PlayerName</b>: <br/> @context.Message</MudTd>
+    </RowTemplate>
+</MudTable>
+<MudForm>
+    <MudGrid>
+        <MudItem xs="10">
+            <MudTextField @bind-Value="_messageInput" Label="Enter message..." Variant="Variant.Text" Margin="Margin.Dense"></MudTextField>
+        </MudItem>
+        <MudItem xs="2">
+            <MudButton @onclick="Send" Variant="Variant.Filled" EndIcon="@Icons.Material.Filled.Send" Color="Color.Primary">Send</MudButton>
+        </MudItem>
+    </MudGrid>
+</MudForm>
+
+@code {
+    [Parameter] public List<ChatMessage> Messages { get; set; } = [];
+
+    [Parameter] public EventCallback<string> SendChatMessage { get; set; }
+
+    private string _messageInput = string.Empty;
+
+    private async Task Send()
+    {
+        if (_messageInput.Length == 0) return;
+        await SendChatMessage.InvokeAsync(_messageInput);
+        _messageInput = string.Empty;
+    }
+}

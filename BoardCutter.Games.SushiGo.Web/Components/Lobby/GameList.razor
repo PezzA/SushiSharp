@@ -1,0 +1,43 @@
+﻿@using BoardCutter.Games.SushiGo.Models
+<h3>Games</h3>
+
+<MudTable T="PublicVisible" Items="Games" Hover="true" Breakpoint="Breakpoint.Sm">
+    <HeaderContent>
+        <MudTh>Owner</MudTh>
+        <MudTh>Players</MudTh>
+        <MudTh>Status</MudTh>
+        <MudTh></MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd>
+            <PlayerAvatar Name="@context.Players[0].Name" AvatarPath="@context.Players[0].AvatarPath()"></PlayerAvatar>
+        </MudTd>
+        <MudTd>@context.Players.Count</MudTd>
+        <MudTd>@context.Status</MudTd>
+        <MudTd>
+            @if (context.Status == GameStatus.SettingUp)
+            {
+                <MudButton @onclick="() => Join(context.Id)">Join Game</MudButton>
+            }
+        </MudTd>
+    </RowTemplate>
+</MudTable>
+
+<MudButton @onclick="Create">Create Game</MudButton>
+
+@code {
+    [Parameter] public required List<PublicVisible> Games { get; set; }
+    [Parameter] public EventCallback<string> JoinGame { get; set; }
+    [Parameter] public EventCallback CreateGame { get; set; }
+
+    private async Task Join(string guid)
+    {
+        await JoinGame.InvokeAsync(guid);
+    }
+
+    private async Task Create()
+    {
+        await CreateGame.InvokeAsync();
+    }
+
+}

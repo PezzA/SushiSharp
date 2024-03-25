@@ -1,0 +1,22 @@
+﻿@using System.Reflection
+@using BoardCutter.Core.Web
+
+<CascadingValue Name="Cookies" Value="Cookies">
+    <CascadingAuthenticationState>
+        <Router AppAssembly="@typeof(Program).Assembly">
+            <Found Context="routeData">
+                <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)">
+                    <NotAuthorized>
+                        <RedirectToLogin/>
+                    </NotAuthorized>
+                </AuthorizeRouteView>
+                <FocusOnNavigate RouteData="@routeData" Selector="h1"/>
+            </Found>
+        </Router>
+    </CascadingAuthenticationState>
+</CascadingValue>
+
+@code {
+    [Parameter] public Dictionary<string, string>? Cookies { get; set; }
+
+}

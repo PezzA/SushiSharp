@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+
+  <ItemGroup>
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.3" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1" />
+    <PackageReference Include="MudBlazor" Version="6.19.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BoardCutter.Core.Web.Shared\BoardCutter.Core.Web.Shared.csproj" />
+    <ProjectReference Include="..\BoardCutter.Games.SushiGo\BoardCutter.Games.SushiGo.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Components\" />
+    <Folder Include="wwwroot\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="Components\Game\Results.razor" />
+    <AdditionalFiles Include="Components\Game\Setup.razor" />
+    <AdditionalFiles Include="Components\Game\Tableau.razor" />
+    <AdditionalFiles Include="Components\Lobby\GameList.razor" />
+    <AdditionalFiles Include="Components\Lobby\GameLobby.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Lobby\GameList.razor" />
+    <UpToDateCheckInput Remove="Lobby\GameLobby.razor" />
+  </ItemGroup>
+
+</Project>
