@@ -4,19 +4,20 @@
 <div
     class="sushi-card @CardClass()"
     style="width:@(BoardSettings.CardWidth)px; height:@(BoardSettings.CardHeight)px; left:@(Left - BoardSettings.ScaledCardWidthOffSet)px;top: @(Top - BoardSettings.ScaledCardHeightOffSet)px; transform: scale(@BoardSettings.CardScale)">
-    @ChildContent
+    @if (Card != null)
+    {
+        <div class="card-content">
+            <span class="card-title">@Card.Type</span>
+        </div>
+    }
 </div>
 
 @code {
-    [Parameter] public RenderFragment? ChildContent { get; set; }
-    [Parameter] public Card? SushiTableCard { get; set; }
+    [Parameter] public Card? Card { get; set; }
     [Parameter] public required int Left { get; set; }
     [Parameter] public required int Top { get; set; }
 
-    private string CardClass()
-    {
-        return SushiTableCard == null 
-            ? string.Empty 
-            : SushiTableCard.GetCardCssClass();
-    }
+    private string CardClass() => Card == null
+        ? string.Empty
+        : Card.GetCardCssClass();
 }

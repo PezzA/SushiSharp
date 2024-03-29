@@ -4,7 +4,7 @@
 @foreach (var (index, card) in Cards.Select((card, index) => (index, card)))
 {
     <PlainCard @key="card.Id"
-               SushiTableCard="card"
+               Card="card"
                Left="LeftOffSet + ((BoardSettings.ScaledCardWidth + BoardSettings.CardGapNormal) * index)"
                Top="TopOffSet"/>
 }
@@ -13,7 +13,7 @@
 {
     <PlainCard
         @key="card.Id"
-        SushiTableCard="card"
+        Card="card"
         Top="TopOffSet + (index * 7)"
         Left="LeftOffSet + (10 * (BoardSettings.ScaledCardWidth + BoardSettings.CardGapNormal)) + (index * 15)"/>
 }
