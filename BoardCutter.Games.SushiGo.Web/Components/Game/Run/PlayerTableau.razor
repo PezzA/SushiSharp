@@ -1,0 +1,43 @@
+﻿@using BoardCutter.Games.SushiGo.Players
+@using BoardCutter.Games.SushiGo.Web.Setup
+@using BoardCutter.Games.SushiGo.Models
+
+<div style="position: absolute;width: 1200px;height: 40px; top: @(Top)px; background-color: #FFF"><div>
+    <PlayerAvatar Name="@Player.Name" AvatarPath="@Player.AvatarPath()" ShowName="true" ShowBadge="true"></PlayerAvatar>
+</div></div>
+<div style="position: absolute;width: 1200px;height: 150px; top: @(Top + 80)px; background-color: #F58840"></div>
+<div style="position: absolute;width: 1200px;height: 10px; top: @(Top + 230)px; background-color: #FFF"></div>
+
+@if (Played != null)
+{
+    @foreach (var (card, index) in Played.Select(((card, i) => (card, i))))
+    {
+        <TableCard
+            @key="card.Id"
+            Card="card"
+            Top="Top + 60"
+            Left="10 + index * (BoardSettings.CardWidth + BoardSettings.CardGapNormal)"
+            ReadOnly="true"/>
+    }
+}
+
+@if (Side != null)
+{
+    @foreach (var (card, index) in Side.Select(((card, i) => (card, i))))
+    {
+        <TableCard
+            @key="card.Id"
+            Card="card"
+            Top="(Top + 60) + (index * 7)"
+            Left="1050 + (index * 7)"
+            ReadOnly="true"/>
+    }
+}
+
+@code {
+    [Parameter] public required Player Player { get; set; }
+    [Parameter] public int Top { get; set; }
+    [Parameter] public List<Card>? Played { get; set; }
+    [Parameter] public List<Card>? Side { get; set; }
+}
+

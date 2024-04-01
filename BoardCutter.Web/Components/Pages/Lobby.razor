@@ -7,8 +7,10 @@
 @using System.Net
 @using BoardCutter.Core.Web.Shared.Chat
 @using BoardCutter.Games.SushiGo.Models
-@using Tableau = BoardCutter.Games.SushiGo.Web.Components.Game.Tableau
 @using BoardCutter.Games.SushiGo
+@using BoardCutter.Games.SushiGo.Web.Components.Game.Run
+@using BoardCutter.Games.SushiGo.Web.Components.Game.Setup
+@using BoardCutter.Games.SushiGo.Web.Components.Game.Results
 @implements IAsyncDisposable
 
 
@@ -37,6 +39,7 @@
                 PlayerVisible="_playerVisible"
                 ViewerVisible="_viewerVisible"
                 TurnState="_turnStatus"
+                CurrentPlayer="@_localPlayerId"
                 SubmitTurn="SubmitTurn"/>
             break;
         case GameStatus.Results:

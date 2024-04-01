@@ -1,0 +1,62 @@
+﻿@using BoardCutter.Games.SushiGo
+@using BoardCutter.Games.SushiGo.Models
+@using BoardCutter.Games.SushiGo.Web.Setup
+
+<div
+    class="sushi-card @Card.GetCardCssClass() @State() @Anim"
+    style="left:@(Left)px; top: @(Top)px;"
+    @onclick="ClickCard">
+    <div class="card-content">
+        <div class="card-title">
+            @Card.Name
+            <!-- Separate line for Make Roll Count -->
+            @if (Card.Type == CardType.MakiRolls)
+            {
+                <br/>
+                @Card.Symbols.Length
+            }
+        </div>
+        <div class="card-info-container">
+            <div class="card-info-text">
+                @Card.Description
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public required Card Card { get; set; }
+
+    // Basic Positioning
+    [Parameter] public int Left { get; set; }
+    [Parameter] public int Top { get; set; }
+    
+    [Parameter] public bool ReadOnly { get; set; }
+    
+    [Parameter] public bool IsSelected { get; set; }
+    
+    [Parameter] public bool IsLocked { get; set; }
+
+    [Parameter] public string Anim { get; set; } = string.Empty;
+    
+    [Parameter] public EventCallback<CardSelectArgs> SelectChange { get; set; }
+
+    private string State()
+    {
+        if (ReadOnly) return string.Empty;
+
+        if (IsLocked) return "dimmed";
+
+        return IsSelected
+            ? "selected"
+            : "grow";
+    }
+
+    private async Task ClickCard()
+    {
+        if (ReadOnly || IsLocked) return;
+
+        await SelectChange.InvokeAsync(new CardSelectArgs { Selected = !IsSelected, Card = Card });
+    }
+
+}

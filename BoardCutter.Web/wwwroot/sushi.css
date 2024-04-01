@@ -1,20 +1,10 @@
-﻿@keyframes appear {
-    0% {
-        left: -2000px;
-    }
-}
-
-@keyframes disappear {
-    100% {
-        left: 3000px;
-    }
-}
+﻿
 .sushi-board {
     position: relative;
     width: 1200px;
     height: 800px;
     background-color: white;
-    border: solid black 1px;
+    overflow: hidden;
 }
 
 .sushi-card {
@@ -26,26 +16,17 @@
     font-family: Roboto, serif;
     z-index: 10;
     color: #FFF;
-    transition: all .2s ease-in-out;
+    transition: all 0.2s ease-in-out;
 }
 
 .info-box {
     position: absolute;
-    top: 30px;
-    left: 950px;
-    width: 200px;
-}
-
-.sweep-right {
-    animation: appear 0.5s ease;
-}
-
-.sweep-left {
-    animation: disappear 0.5s ease;
+    top: 10px;
+    left: 0;
+    width: 1200px;
 }
 
 .deck-size {
-    transform: scale(4);
     font-weight: bold;
     color: white;
     font-size: larger;
@@ -68,7 +49,7 @@
 
 .card-title {
     text-align: center;
-    text-shadow: 1px 1px 2px black, #FFF 1px 1px 15px, 0 0 0.2em #FFF;
+    text-shadow: 1px 1px 2px black, #FFF 1px 1px 4px, 0 0 0.2em #FFF;
     font-size: 14pt;
     flex-grow: 1;
 }
@@ -77,22 +58,22 @@
     width: 100%;
     text-align: center;
     margin-bottom: auto;
-    background: rgba(0,0,0,0.5);
+    background: rgba(0, 0, 0, 0.5);
     border-radius: 0 0 9px 9px;
-    height:40px;
+    height: 40px;
 }
 
-.card-info-text{
+.card-info-text {
     padding: 5px 5px 5px 5px;
     font-size: 10pt;
-    color:#FFF;
+    color: #FFF;
+    letter-spacing: normal !important;
 }
-
 
 .selected {
     transform: scale(1.2) rotate(0) !important;
     border: 5px solid limegreen !important;
-    z-index: 1 !important;
+    z-index: 15 !important;
     box-shadow: 30px 30px 40px black !important;
 }
 
