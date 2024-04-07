@@ -10,17 +10,16 @@
     },
     "profiles": {
       "httpsWatch": {
-        "commandName": "Executable",
+        "commandName": "Project",
         "executablePath": "dotnet",
         "workingDirectory": "$(ProjectDir)",
         "hotReloadEnabled": true,
         "hotReloadProfile": "aspnetcore",
-        "commandLineArgs": "watch run",
         "launchBrowser": true,
         "environmentVariables": {
           "ASPNETCORE_ENVIRONMENT": "Development"
         },
-        "applicationUrl": "https://localhost:3251;http://localhost:6362"
+        "applicationUrl": "https://localhost;http://localhost:5161"
       },
       "http": {
         "commandName": "Project",

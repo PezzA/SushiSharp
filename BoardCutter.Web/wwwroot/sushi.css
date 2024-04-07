@@ -7,6 +7,30 @@
     overflow: hidden;
 }
 
+
+
+.account-nav-items {
+    color: #FFF;
+    font-size: 20px;
+    text-shadow: 2px 2px 4px white;
+}
+
+.header-icon {
+    color: white;
+    font-size: 48pt;
+    font-style: normal;
+    text-shadow: 2px 2px 4px blue;
+}
+
+.play-cta {
+    font-family: "Princess Sofia", cursive;
+    color: green;
+    font-size: 32pt;
+    font-weight: 100;
+    font-style: normal;
+    text-shadow: 2px 2px 4px white;
+}
+
 .sushi-card {
     width: 100px;
     height: 150px;

@@ -1,29 +1,30 @@
 ﻿@using BoardCutter.Games.SushiGo.Models
-<h3>Games</h3>
 
-<MudTable T="PublicVisible" Items="Games" Hover="true" Breakpoint="Breakpoint.Sm">
-    <HeaderContent>
-        <MudTh>Owner</MudTh>
-        <MudTh>Players</MudTh>
-        <MudTh>Status</MudTh>
-        <MudTh></MudTh>
-    </HeaderContent>
-    <RowTemplate>
-        <MudTd>
-            <PlayerAvatar Name="@context.Players[0].Name" AvatarPath="@context.Players[0].AvatarPath()"></PlayerAvatar>
-        </MudTd>
-        <MudTd>@context.Players.Count</MudTd>
-        <MudTd>@context.Status</MudTd>
-        <MudTd>
-            @if (context.Status == GameStatus.SettingUp)
-            {
-                <MudButton @onclick="() => Join(context.Id)">Join Game</MudButton>
-            }
-        </MudTd>
-    </RowTemplate>
-</MudTable>
+<MudButton Variant="Variant.Filled" Color="Color.Success" StartIcon="@Icons.Material.Filled.Create" @onclick="Create">Create Game</MudButton>
 
-<MudButton @onclick="Create">Create Game</MudButton>
+<div style="display: flex; flex-direction: column;margin:10px">
+
+    @foreach (var game in Games)
+    {
+        <MudCard Outlined="true" Style="width:300px">
+            <MudCardHeader>
+                <CardHeaderAvatar>
+                    <PlayerAvatar Name="@game.Players[0].Name" AvatarPath="@game.Players[0].AvatarPath()"></PlayerAvatar>
+                </CardHeaderAvatar>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">@game.Players[0].Name's game</MudText>
+                    <MudText Typo="Typo.body2">Sushi Go!</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudText Typo="Typo.body2">Game Status: @game.Status</MudText>
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton StartIcon="@Icons.Material.Filled.LabelImportant" Color="Color.Success" @onclick="() => Join(game.Id)">Join Game</MudButton>
+            </MudCardActions>
+        </MudCard>
+    }
+</div>
 
 @code {
     [Parameter] public required List<PublicVisible> Games { get; set; }
