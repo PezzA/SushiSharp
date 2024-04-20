@@ -1,11 +1,11 @@
 ﻿using Akka.Actor;
 using Akka.Hosting;
 
+using BoardCutter.Core.Players;
 using BoardCutter.Core.Web.Shared.Chat;
 using BoardCutter.Games.SushiGo;
 using BoardCutter.Games.SushiGo.Actors.Game;
 using BoardCutter.Games.SushiGo.Actors.GameManager;
-using BoardCutter.Games.SushiGo.Players;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;

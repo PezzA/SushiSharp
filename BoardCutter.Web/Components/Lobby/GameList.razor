@@ -1,9 +1,6 @@
 ﻿@using BoardCutter.Games.SushiGo.Models
-
-<MudButton Variant="Variant.Filled" Color="Color.Success" StartIcon="@Icons.Material.Filled.Create" @onclick="Create">Create Game</MudButton>
-
+@using BoardCutter.Core.Web.Shared
 <div style="display: flex; flex-direction: column;margin:10px">
-
     @foreach (var game in Games)
     {
         <MudCard Outlined="true" Style="width:300px">
@@ -29,16 +26,9 @@
 @code {
     [Parameter] public required List<PublicVisible> Games { get; set; }
     [Parameter] public EventCallback<string> JoinGame { get; set; }
-    [Parameter] public EventCallback CreateGame { get; set; }
 
     private async Task Join(string guid)
     {
         await JoinGame.InvokeAsync(guid);
     }
-
-    private async Task Create()
-    {
-        await CreateGame.InvokeAsync();
-    }
-
 }

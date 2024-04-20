@@ -2,6 +2,8 @@
 
 using Microsoft.AspNetCore.SignalR;
 
+using Newtonsoft.Json;
+
 namespace BoardCutter.Core.Actors.HubWriter;
 
 public class HubClientWriterActor<T> : ReceiveActor where T : Hub
@@ -12,34 +14,41 @@ public class HubClientWriterActor<T> : ReceiveActor where T : Hub
     {
         _hubContext = hubContext;
 
-        ReceiveAsync<ClientWriterActorMessages.WriteClient>(ClientWrite);
-        ReceiveAsync<ClientWriterActorMessages.WriteAll>(AllWrite);
-        ReceiveAsync<ClientWriterActorMessages.WriteGroup>(GroupWrite);
-        ReceiveAsync<ClientWriterActorMessages.AddToGroup>(AddToGroup);
-        ReceiveAsync<ClientWriterActorMessages.RemoveFromGroup>(RemoveFromGroup);
+        ReceiveAsync<HubWriterActorMessages.WriteClient>(ClientWrite);
+        ReceiveAsync<HubWriterActorMessages.WriteAll>(AllWrite);
+        ReceiveAsync<HubWriterActorMessages.WriteGroup>(GroupWrite);
+        ReceiveAsync<HubWriterActorMessages.WriteGroupObject>(GroupWriteObject);
+        ReceiveAsync<HubWriterActorMessages.AddToGroup>(AddToGroup);
+        ReceiveAsync<HubWriterActorMessages.RemoveFromGroup>(RemoveFromGroup);
     }
 
-    private async Task AddToGroup(ClientWriterActorMessages.AddToGroup message)
+    private async Task GroupWriteObject(HubWriterActorMessages.WriteGroupObject message)
+    {
+        await _hubContext.Clients.Group(message.GroupId)
+            .SendAsync(message.Message, JsonConvert.SerializeObject(message.Payload));
+    }
+
+    private async Task AddToGroup(HubWriterActorMessages.AddToGroup message)
     {
         await _hubContext.Groups.AddToGroupAsync(message.ConnectionId, message.GroupId);
     }
 
-    private async Task RemoveFromGroup(ClientWriterActorMessages.RemoveFromGroup message)
+    private async Task RemoveFromGroup(HubWriterActorMessages.RemoveFromGroup message)
     {
         await _hubContext.Groups.RemoveFromGroupAsync(message.ConnectionId, message.GroupId);
     }
 
-    private async Task GroupWrite(ClientWriterActorMessages.WriteGroup message)
+    private async Task GroupWrite(HubWriterActorMessages.WriteGroup message)
     {
         await _hubContext.Clients.Group(message.GroupId).SendAsync(message.Message, message.Payload);
     }
 
-    private async Task AllWrite(ClientWriterActorMessages.WriteAll message)
+    private async Task AllWrite(HubWriterActorMessages.WriteAll message)
     {
         await _hubContext.Clients.All.SendAsync(message.Message, message.Payload);
     }
 
-    private async Task ClientWrite(ClientWriterActorMessages.WriteClient message)
+    private async Task ClientWrite(HubWriterActorMessages.WriteClient message)
     {
         await _hubContext.Clients.Client(message.ConnectionId).SendAsync(message.Message, message.Payload);
     }

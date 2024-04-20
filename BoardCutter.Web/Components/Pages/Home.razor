@@ -1,72 +1,28 @@
 ﻿@page "/"
 @rendermode InteractiveServer
 
-@using Microsoft.AspNetCore.SignalR.Client
-@using Microsoft.AspNetCore.Authorization
-@using Newtonsoft.Json
-@using System.Net
 @using BoardCutter.Core.Web.Shared.Chat
-@using BoardCutter.Games.SushiGo.Models
 @using BoardCutter.Games.SushiGo
-@using BoardCutter.Games.SushiGo.Web.Components.Game.Run
-@using BoardCutter.Games.SushiGo.Web.Components.Game.Setup
-@using BoardCutter.Games.SushiGo.Web.Components.Game.Results
-@using BoardCutter.Web.Components.Layout
+@using BoardCutter.Games.SushiGo.Models
+@using BoardCutter.Web.Components.Lobby
+
 @implements IAsyncDisposable
-
-
-
 @attribute [Authorize]
-
 @inject NavigationManager Navigation
 @inject IJSRuntime JsRuntime
 @inject ISnackbar Snackbar
-@inject IDialogService DialogService
-
 @inject IHttpContextAccessor HttpContextAccessor
+@inject IDialogService DialogService
+@inject NavigationManager NavManager
+<GameLobby
+    Games="_gameList"
+    Messages="_messages"
+    SendChatMessage="Send"
+    JoinGame="JoinGame" />
 
-@if (_publicVisible != null)
-{
-    switch (_publicVisible.Status)
-    {
-        case GameStatus.SettingUp:
-            <Setup
-                PublicVisible="_publicVisible"
-                LeaveGame="LeaveGame"
-                StartGame="StartGame"
-                CurrentName="authState.User.Identity?.Name"/>
-            break;
-        case GameStatus.Running:
-            <Tableau
-                PublicVisible="_publicVisible"
-                PlayerVisible="_playerVisible"
-                ViewerVisible="_viewerVisible"
-                TurnState="_turnStatus"
-                CurrentPlayer="@_localPlayerId"
-                SubmitTurn="SubmitTurn"/>
-            break;
-        case GameStatus.Results:
-            <Results
-                PublicVisible="_publicVisible"
-                ViewerVisible="_viewerVisible"
-                LeaveGame="LeaveGame"/>
-            break;
-        default:
-            throw new InvalidDataException("Unknown game state");
-    }
-}
-else
-{
-    <GameLobby
-        Games="_gameList"
-        Messages="_messages"
-        SendChatMessage="Send"
-        JoinGame="JoinGame"
-        CreateGame="CreateGame"/>
-}
+<MudButton Variant="Variant.Filled" Color="Color.Success" StartIcon="@Icons.Material.Filled.Create" @onclick="Create">Create Game</MudButton>
 
 @code {
-
     [CascadingParameter(Name = "Cookies")] public Dictionary<string, string>? Cookies { get; set; }
 
     private HubConnection? _hubConnection;
@@ -74,13 +30,6 @@ else
     // Each private here represents a separately maintainable facet of client state
     private List<ChatMessage>? _messages = [];
     private List<PublicVisible> _gameList = [];
-
-    private PublicVisible? _publicVisible;
-    private ViewerVisible? _viewerVisible;
-    private PlayerVisible? _playerVisible;
-    private string _localPlayerId = string.Empty;
-
-    private Dictionary<string, bool>? _turnStatus = [];
 
     private async Task Debug(string message)
     {
@@ -92,14 +41,6 @@ else
         Snackbar.Add(message, severity);
     }
 
-    private async Task Dialog(string message)
-    {
-        var parameters = new DialogParameters<ErrorDialog>();
-        parameters.Add(x => x.ContentText, message);
-
-        var options = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall };
-        await DialogService.ShowAsync<ErrorDialog>("Oops!", parameters, options);
-    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -150,12 +91,6 @@ else
             })
             .Build();
 
-        _hubConnection.On(ServerMessages.SetIdentity, async (string playerId) =>
-        {
-            await Debug($"{ServerMessages.SetIdentity}: {playerId}");
-            _localPlayerId = playerId;
-            await InvokeAsync(StateHasChanged);
-        });
 
         _hubConnection.On(ServerMessages.GameList, async (string message) =>
         {
@@ -182,66 +117,14 @@ else
         _hubConnection.On(ServerMessages.ErrorMessage, async (string message) =>
         {
             Toast(message, Severity.Warning);
-            await Dialog(message);
-
             await InvokeAsync(StateHasChanged);
         });
 
-        _hubConnection.On(ServerMessages.SetPlayerTurnStatus, async (string message) =>
-        {
-            await Debug($"{ServerMessages.SetPlayerTurnStatus}: {message}");
-
-            _turnStatus = string.IsNullOrEmpty(message)
-                ? []
-                : JsonConvert.DeserializeObject<Dictionary<string, bool>>(message);
-
-            await InvokeAsync(StateHasChanged);
-        });
-
-        _hubConnection.On(ServerMessages.SetViewerVisibleData, async (string message) =>
-        {
-            await Debug($"{ServerMessages.SetViewerVisibleData}: {message}");
-
-            _viewerVisible = string.IsNullOrEmpty(message)
-                ? null
-                : JsonConvert.DeserializeObject<ViewerVisible>(message);
-
-            await InvokeAsync(StateHasChanged);
-        });
-
-        _hubConnection.On(ServerMessages.SetPlayerVisibleData, async (string message) =>
-        {
-            await Debug($"{ServerMessages.SetPlayerVisibleData}: {message}");
-
-            _playerVisible = string.IsNullOrEmpty(message)
-                ? null
-                : JsonConvert.DeserializeObject<PlayerVisible>(message);
-
-            await InvokeAsync(StateHasChanged);
-        });
-
-        _hubConnection.On(ServerMessages.SetPlayerGame, async (string message) =>
-        {
-            await Debug($"{ServerMessages.SetPlayerGame}: {message}");
-
-            _publicVisible = string.IsNullOrEmpty(message)
-                ? null
-                : JsonConvert.DeserializeObject<PublicVisible>(message);
-
-            await InvokeAsync(StateHasChanged);
-        });
 
         await _hubConnection.StartAsync();
         await _hubConnection.SendAsync(ClientMessage.InitClient);
     }
 
-    private async Task StartGame(string gameId)
-    {
-        if (_hubConnection is not null)
-        {
-            await _hubConnection.SendAsync(ClientMessage.StartGame, gameId);
-        }
-    }
 
     private async Task JoinGame(string gameId)
     {
@@ -267,28 +150,22 @@ else
         }
     }
 
-    private async Task SubmitTurn(SubmitTurnArgs args)
-    {
-        if (_hubConnection is not null)
-        {
-            await _hubConnection.SendAsync(ClientMessage.SubmitTurn, args.GameId, JsonConvert.SerializeObject(args.Cards));
-        }
-    }
-
-    private async Task LeaveGame(string gameId)
-    {
-        if (_hubConnection is not null)
-        {
-            await _hubConnection.SendAsync(ClientMessage.LeaveGame, gameId);
-        }
-    }
-
     public async ValueTask DisposeAsync()
     {
         if (_hubConnection is not null)
         {
             await _hubConnection.DisposeAsync();
         }
+    }
+
+    private async Task Create()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true , MaxWidth=MaxWidth.Large};
+        var dialog = await DialogService.ShowAsync<CreateGame>("Simple Dialog", options);
+
+        var result = await dialog.Result;
+        
+        NavManager.NavigateTo($"/{result.Data}");
     }
 
 }

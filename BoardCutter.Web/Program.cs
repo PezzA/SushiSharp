@@ -5,6 +5,7 @@ using BoardCutter.Core.Actors.HubWriter;
 using BoardCutter.Core.Web.Components.Account;
 using BoardCutter.Core.Web.Shared.Chat;
 using BoardCutter.Core.Data;
+using BoardCutter.Core.Players;
 
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -15,7 +16,6 @@ using MudBlazor.Services;
 
 using BoardCutter.Games.SushiGo;
 using BoardCutter.Games.SushiGo.Actors.GameManager;
-using BoardCutter.Games.SushiGo.Players;
 using BoardCutter.Games.SushiGo.Scoring;
 using BoardCutter.Games.SushiGo.Shufflers;
 

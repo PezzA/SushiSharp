@@ -30,8 +30,6 @@
   <ItemGroup>
     <AdditionalFiles Include="Components\Game\Results\Results.razor" />
     <AdditionalFiles Include="Components\Game\Setup\Setup.razor" />
-    <AdditionalFiles Include="Components\Lobby\GameList.razor" />
-    <AdditionalFiles Include="Components\Lobby\GameLobby.razor" />
   </ItemGroup>
 
   <ItemGroup>

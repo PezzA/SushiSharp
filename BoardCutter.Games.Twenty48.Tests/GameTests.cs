@@ -19,6 +19,56 @@ public class GameTests
     }
 
     [Fact]
+    public void MovingLeft_Processes_Successfully()
+    {
+        var grid = new[,]
+        {
+            { 2, 2, 2, 4 }, 
+            { 0, 0, 4, 4 }, 
+            { 0, 0, 2, 8 }, 
+            { 2, 0, 4, 8 }
+        };
+
+        var expected = new[,]
+        {
+            { 4, 2, 4, 0 }, 
+            { 8, 0, 0, 0 }, 
+            { 2, 8, 0, 0 }, 
+            { 2, 4, 8, 0 }
+        };
+
+        (int[,] actual, int scoreIncrement) = GameActor.ProcessLeft(grid);
+
+        Assert.Equal(12, scoreIncrement);
+        Assert.Equivalent(expected, actual);
+    }
+
+    [Fact]
+    public void MovingRight_Processes_Successfully()
+    {
+        var grid = new[,]
+        {
+            { 2, 2, 2, 4 }, 
+            { 0, 0, 4, 4 }, 
+            { 0, 0, 2, 8 }, 
+            { 2, 0, 4, 8 }
+        };
+
+        var expected = new[,]
+        {
+            { 0, 0, 2, 8 }, 
+            { 0, 0, 0, 8 }, 
+            { 0, 0, 2, 8 }, 
+            { 0, 2, 4, 8 }
+        };
+
+        (int[,] actual, int scoreIncrement) = GameActor.ProcessRight(grid);
+
+        Assert.Equal(20, scoreIncrement);
+        Assert.Equivalent(expected, actual);
+    }
+    
+    [Fact]
     public void MovingUp_Processes_Successfully()
     {
         var grid = new[,] { { 2, 2, 2, 4 }, { 0, 0, 4, 4 }, { 0, 0, 2, 8 }, { 2, 0, 4, 8 } };

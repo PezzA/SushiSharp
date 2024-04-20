@@ -47,7 +47,7 @@ public class GameManagerActor : ReceiveActor
         _gameDataList.Remove(message.GameId);
         
         var gameList = _gameDataList.Select(entry => entry.Value).ToArray();
-        _clientWriterActor.Tell(new ClientWriterActorMessages.WriteAll(ServerMessages.GameList,
+        _clientWriterActor.Tell(new HubWriterActorMessages.WriteAll(ServerMessages.GameList,
             JsonConvert.SerializeObject(gameList)));
     }
 
@@ -55,7 +55,7 @@ public class GameManagerActor : ReceiveActor
     {
         var gameList = _gameDataList.Select(entry => entry.Value).ToArray();
 
-        _clientWriterActor.Tell(new ClientWriterActorMessages.WriteClient(message.Player.ConnectionId,
+        _clientWriterActor.Tell(new HubWriterActorMessages.WriteClient(message.Player.ConnectionId,
             ServerMessages.GameList,
             JsonConvert.SerializeObject(gameList)));
     }
@@ -69,7 +69,7 @@ public class GameManagerActor : ReceiveActor
         // Debug to enable test.
         Sender?.Tell(message);
 
-        _clientWriterActor.Tell(new ClientWriterActorMessages.WriteAll(ServerMessages.GameList,
+        _clientWriterActor.Tell(new HubWriterActorMessages.WriteAll(ServerMessages.GameList,
             JsonConvert.SerializeObject(gameList)));
     }
 
@@ -89,7 +89,7 @@ public class GameManagerActor : ReceiveActor
     {
         if (!_gameActorList.ContainsKey(message.GameId))
         {
-            _clientWriterActor.Tell(new ClientWriterActorMessages.WriteClient(message.Player.ConnectionId,
+            _clientWriterActor.Tell(new HubWriterActorMessages.WriteClient(message.Player.ConnectionId,
                 ServerMessages.ErrorMessage, $"{typeof(T)}: Game could not be found.  GameId :{message.GameId}"));
 
             return;
@@ -108,7 +108,7 @@ public class GameManagerActor : ReceiveActor
     {
         if (!_gameActorList.ContainsKey(message.GameId))
         {
-            _clientWriterActor.Tell(new ClientWriterActorMessages.WriteClient(message.Player.ConnectionId,
+            _clientWriterActor.Tell(new HubWriterActorMessages.WriteClient(message.Player.ConnectionId,
                 ServerMessages.ErrorMessage, $"GamePlayRequest: Game could not be found.  GameId :{message.GameId}"));
 
             return;

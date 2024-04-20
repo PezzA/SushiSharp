@@ -3,7 +3,7 @@
 using BoardCutter.Core.Actors.HubWriter;
 using BoardCutter.Games.SushiGo.Decks;
 using BoardCutter.Games.SushiGo.Models;
-using BoardCutter.Games.SushiGo.Players;
+using BoardCutter.Core.Players;
 using BoardCutter.Games.SushiGo.Scoring;
 using BoardCutter.Games.SushiGo.Shufflers;
 
@@ -122,8 +122,8 @@ public class GameActor : ReceiveActor
 
         _players.RemoveAt(playerIndex);
 
-        _hubWriterActor.Tell(new ClientWriterActorMessages.RemoveFromGroup(_gameId, message.Player.ConnectionId));
-        _hubWriterActor.Tell(new ClientWriterActorMessages.WriteClient(message.Player.ConnectionId,
+        _hubWriterActor.Tell(new HubWriterActorMessages.RemoveFromGroup(_gameId, message.Player.ConnectionId));
+        _hubWriterActor.Tell(new HubWriterActorMessages.WriteClient(message.Player.ConnectionId,
             ServerMessages.SetPlayerGame, string.Empty));
 
         if ((message.Player.Id == _creator.Id && _status == GameStatus.SettingUp) || _players.Count == 0)
@@ -131,8 +131,8 @@ public class GameActor : ReceiveActor
             foreach (var player in _players)
             {
                 _hubWriterActor.Tell(
-                    new ClientWriterActorMessages.RemoveFromGroup(_gameId, player.ConnectionId));
-                _hubWriterActor.Tell(new ClientWriterActorMessages.WriteClient(player.ConnectionId,
+                    new HubWriterActorMessages.RemoveFromGroup(_gameId, player.ConnectionId));
+                _hubWriterActor.Tell(new HubWriterActorMessages.WriteClient(player.ConnectionId,
                     ServerMessages.SetPlayerGame, string.Empty));
             }
 
@@ -151,9 +151,9 @@ public class GameActor : ReceiveActor
         var publicVisibleData = GetPublicVisibleData();
         Sender.Tell(new GameActorMessages.UpdateGameNotification(publicVisibleData));
 
-        _hubWriterActor.Tell(new ClientWriterActorMessages.AddToGroup(_gameId, _creator.ConnectionId));
+        _hubWriterActor.Tell(new HubWriterActorMessages.AddToGroup(_gameId, _creator.ConnectionId));
 
-        _hubWriterActor.Tell(new ClientWriterActorMessages.WriteClient(
+        _hubWriterActor.Tell(new HubWriterActorMessages.WriteClient(
             _creator.ConnectionId,
             ServerMessages.SetPlayerGame,
             JsonConvert.SerializeObject(publicVisibleData)));
@@ -305,7 +305,7 @@ public class GameActor : ReceiveActor
 
     private void SendError(string connectionId, string message)
     {
-        _hubWriterActor.Tell(new ClientWriterActorMessages.WriteClient(
+        _hubWriterActor.Tell(new HubWriterActorMessages.WriteClient(
             connectionId,
             ServerMessages.ErrorMessage,
             message));
@@ -327,11 +327,11 @@ public class GameActor : ReceiveActor
 
         _players.Add(message.Player);
 
-        _hubWriterActor.Tell(new ClientWriterActorMessages.AddToGroup(
+        _hubWriterActor.Tell(new HubWriterActorMessages.AddToGroup(
             message.GameId,
             message.Player.ConnectionId));
 
-        _hubWriterActor.Tell(new ClientWriterActorMessages.WriteGroup(
+        _hubWriterActor.Tell(new HubWriterActorMessages.WriteGroup(
             _gameId,
             ServerMessages.SetPlayerGame,
             JsonConvert.SerializeObject(GetPublicVisibleData())));
@@ -365,7 +365,7 @@ public class GameActor : ReceiveActor
     {
         var statii = _players.ToDictionary(p => p.Id, p => _playerTurnList.ContainsKey(p.Id));
 
-        _hubWriterActor.Tell(new ClientWriterActorMessages.WriteGroup(
+        _hubWriterActor.Tell(new HubWriterActorMessages.WriteGroup(
             _gameId,
             ServerMessages.SetPlayerTurnStatus,
             JsonConvert.SerializeObject(statii)));
@@ -375,7 +375,7 @@ public class GameActor : ReceiveActor
     {
         foreach (var player in _players)
         {
-            _hubWriterActor.Tell(new ClientWriterActorMessages.WriteClient(
+            _hubWriterActor.Tell(new HubWriterActorMessages.WriteClient(
                 player.ConnectionId,
                 ServerMessages.SetPlayerVisibleData,
                 JsonConvert.SerializeObject(GetPlayerVisibleData(player.Id))));
@@ -392,7 +392,7 @@ public class GameActor : ReceiveActor
 
     private void BroadcastPublicVisibleData()
     {
-        _hubWriterActor.Tell(new ClientWriterActorMessages.WriteGroup(
+        _hubWriterActor.Tell(new HubWriterActorMessages.WriteGroup(
             _gameId,
             ServerMessages.SetPlayerGame,
             JsonConvert.SerializeObject(GetPublicVisibleData())));
@@ -400,7 +400,7 @@ public class GameActor : ReceiveActor
 
     private void BroadcastViewerVisibleData()
     {
-        _hubWriterActor.Tell(new ClientWriterActorMessages.WriteGroup(
+        _hubWriterActor.Tell(new HubWriterActorMessages.WriteGroup(
             _gameId,
             ServerMessages.SetViewerVisibleData,
             JsonConvert.SerializeObject(GetViewerVisibleData())));

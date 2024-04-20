@@ -1,5 +1,5 @@
-﻿using BoardCutter.Games.SushiGo.Models;
-using BoardCutter.Games.SushiGo.Players;
+﻿using BoardCutter.Core.Players;
+using BoardCutter.Games.SushiGo.Models;
 
 namespace BoardCutter.Games.SushiGo.Actors.Game;
 

@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BoardCutter.Core.Actors\BoardCutter.Core.Actors.csproj" />
+    <ProjectReference Include="..\BoardCutter.Core\BoardCutter.Core.csproj" />
   </ItemGroup>
 
 </Project>

@@ -2,8 +2,8 @@ using Akka.Actor;
 using Akka.TestKit.Xunit2;
 
 using BoardCutter.Core.Actors.HubWriter;
+using BoardCutter.Core.Players;
 using BoardCutter.Games.SushiGo.Actors.Game;
-using BoardCutter.Games.SushiGo.Players;
 using BoardCutter.Games.SushiGo.Scoring;
 using BoardCutter.Games.SushiGo.Shufflers;
 
@@ -38,22 +38,22 @@ public class GameActorValidations : TestKit
         gameActor.Tell(new GameActorMessages.CreateGameRequest(creatorPlayer));
 
         ExpectMsg<GameActorMessages.UpdateGameNotification>();
-        writerProbe.ExpectMsg<ClientWriterActorMessages.AddToGroup>();
-        writerProbe.ExpectMsg<ClientWriterActorMessages.WriteClient>();
+        writerProbe.ExpectMsg<HubWriterActorMessages.AddToGroup>();
+        writerProbe.ExpectMsg<HubWriterActorMessages.WriteClient>();
 
         // Adding the first guest, should be fine
         gameActor.Tell(new GameActorMessages.JoinGameRequest(guestOne, gameId));
 
         ExpectMsg<GameActorMessages.UpdateGameNotification>();
-        writerProbe.ExpectMsg<ClientWriterActorMessages.AddToGroup>();
-        writerProbe.ExpectMsg<ClientWriterActorMessages.WriteGroup>();
+        writerProbe.ExpectMsg<HubWriterActorMessages.AddToGroup>();
+        writerProbe.ExpectMsg<HubWriterActorMessages.WriteGroup>();
 
         // Adding the second guest should trip the max player validation 
         gameActor.Tell(new GameActorMessages.JoinGameRequest(guestTwo, gameId));
 
         // after this there should be just a single error message sent back to the 
         // originating client.
-        var writeMsg = writerProbe.ExpectMsg<ClientWriterActorMessages.WriteClient>();
+        var writeMsg = writerProbe.ExpectMsg<HubWriterActorMessages.WriteClient>();
 
         writerProbe.ExpectNoMsg(_noMsgTimeout);
         ExpectNoMsg(_noMsgTimeout);

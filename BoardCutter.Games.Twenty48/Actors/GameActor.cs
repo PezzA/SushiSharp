@@ -1,20 +1,32 @@
-﻿using Akka.Actor;
+﻿using System.Text.Json.Nodes;
 
-using BoardCutter.Games.SushiGo.Players;
+using Akka.Actor;
+
+using BoardCutter.Core.Actors.HubWriter;
+using BoardCutter.Core.Players;
+using BoardCutter.Games.SushiGo;
 
 namespace BoardCutter.Games.Twenty48.Actors;
+
+public class ViewerVisibleData
+{
+    public int Score { get; set; }
+    public int[,]? Grid { get; set; }
+}
 
 public class GameActor : ReceiveActor
 {
     private readonly Player _owner;
-    private string _gameId;
+    private readonly string _gameId;
     private int _gridSize = 4;
     private int[,] _grid = { { } };
     private int _score = 0;
+    private readonly IActorRef _hubWriterActor;
 
-    public GameActor(Player owner, string? gameId = null)
+    public GameActor(Player owner, IActorRef hubWriterActor, string? gameId = null)
     {
         _owner = owner;
+        _hubWriterActor = hubWriterActor;
         _gameId = gameId ?? Guid.NewGuid().ToString();
 
         Receive<GameActorMessages.SetupGameRequest>(SetupRequest);
@@ -42,16 +54,99 @@ public class GameActor : ReceiveActor
         };
 
         _score += scoreIncrement;
+        
+        _hubWriterActor.Tell(new HubWriterActorMessages.WriteGroupObject(_gameId,
+            ServerMessages.SetViewerVisibleData,
+            new ViewerVisibleData() { Score = _score, Grid = _grid }));
+    }
+
+    private static (int[,], int, bool) ProcessUpdate(int[,] grid, int x1, int y1, int x2, int y2)
+    {
+        // exit if source is zero
+        if (grid[y1, x1] == 0) return (grid, 0, false);
+
+        int tmpX = x2;
+        int tmpY = y2;
+
+        while (grid[tmpY, tmpX] == 0)
+        {
+            grid[y2, x2] += grid[y1, x1];
+            grid[y1, x1] = 0;
+        }
+
+        // if target is zero, shunt and set source to zero
+        if (grid[y2, x2] == 0)
+        {
+            grid[y2, x2] += grid[y1, x1];
+            grid[y1, x1] = 0;
+        }
+
+        // if they are different do nothing
+        if (grid[y1, x1] != grid[y2, x2]) return (grid, 0, false);
+
+        // Merge!
+        grid[y2, x2] += grid[y1, x1];
+        grid[y1, x1] = 0;
+        return (grid, grid[y2, x2], true);
     }
 
     public static (int[,], int) ProcessRight(int[,] grid)
     {
-        throw new NotImplementedException();
+        var gridSize = grid.GetLength(0);
+        var scoreIncrement = 0;
+
+        var didUpdate = true;
+
+        while (didUpdate)
+        {
+            didUpdate = false;
+            for (int x = gridSize - 2; x >= 0; x--)
+            {
+                for (int y = 0; y < gridSize; y++)
+                {
+                    (grid, int localIncrement, bool updated) = ProcessUpdate(grid, x, y, x + 1, y);
+
+                    scoreIncrement += localIncrement;
+
+                    if (updated)
+                    {
+                        didUpdate = true;
+                    }
+                }
+            }
+        }
+
+        return (grid, scoreIncrement);
     }
 
-    private static (int[,], int) ProcessLeft(int[,] grid)
+    public static (int[,], int) ProcessLeft(int[,] grid)
     {
-        throw new NotImplementedException();
+        var gridSize = grid.GetLength(0);
+        var scoreIncrement = 0;
+
+        var didUpdate = true;
+
+        while (didUpdate)
+        {
+            didUpdate = false;
+
+            for (int x = 1; x <= gridSize - 1; x++)
+            {
+                for (int y = 0; y < gridSize; y++)
+                {
+                    (grid, int localIncrement, bool updated) = ProcessUpdate(grid, x, y, x - 1, y);
+
+                    scoreIncrement += localIncrement;
+
+                    if (updated)
+                    {
+                        didUpdate = true;
+                    }
+                }
+            }
+        }
+
+        return (grid, scoreIncrement);
     }
 
     public static (int[,], int) ProcessUp(int[,] grid)
@@ -69,26 +164,14 @@ public class GameActor : ReceiveActor
             {
                 for (int y = 1; y <= gridSize - 1; y++)
                 {
-                    // exit if source is zero
-                    if (grid[y, x] == 0) continue;
+                    (grid, int localIncrement, bool updated) = ProcessUpdate(grid, x, y, x, y - 1);
 
-                    // if target is zero, shunt and set source to zero
-                    if (grid[y - 1, x] == 0)
+                    scoreIncrement += localIncrement;
+
+                    if (updated)
                     {
                         didUpdate = true;
-                        grid[y - 1, x] += grid[y, x];
-                        grid[y, x] = 0;
-                        continue;
                     }
-
-                    // if they are different do nothing
-                    if (grid[y, x] != grid[y - 1, x]) continue;
-
-                    // Merge!
-                    didUpdate = true;
-                    grid[y - 1, x] += grid[y, x];
-                    grid[y, x] = 0;
-                    scoreIncrement += grid[y - 1, x];
                 }
             }
         }
@@ -111,26 +194,14 @@ public class GameActor : ReceiveActor
             {
                 for (int y = gridSize - 2; y >= 0; y--)
                 {
-                    // exit if source is zero
-                    if (grid[y, x] == 0) continue;
+                    (grid, int localIncrement, bool updated) = ProcessUpdate(grid, x, y, x, y + 1);
 
-                    // if target is zero, shunt and set source to zero
-                    if (grid[y + 1, x] == 0)
+                    scoreIncrement += localIncrement;
+
+                    if (updated)
                     {
                         didUpdate = true;
-                        grid[y + 1, x] += grid[y, x];
-                        grid[y, x] = 0;
-                        continue;
                     }
-
-                    // if they are different do nothing
-                    if (grid[y, x] != grid[y + 1, x]) continue;
-
-                    // Merge!
-                    didUpdate = true;
-                    grid[y + 1, x] += grid[y, x];
-                    grid[y, x] = 0;
-                    scoreIncrement += grid[y + 1, x];
                 }
             }
         }
@@ -170,7 +241,7 @@ public class GameActor : ReceiveActor
 
     private void CreateGameRequest(GameActorMessages.CreateGameRequest message)
     {
-        throw new NotImplementedException();
+        _hubWriterActor.Tell(new HubWriterActorMessages.AddToGroup(_gameId, _owner.ConnectionId));
     }
 
     private void SetupRequest(GameActorMessages.SetupGameRequest message)

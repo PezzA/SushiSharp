@@ -1,4 +1,4 @@
-﻿using BoardCutter.Games.SushiGo.Players;
+﻿using BoardCutter.Core.Players;
 
 namespace BoardCutter.Games.Twenty48.Actors;
 
