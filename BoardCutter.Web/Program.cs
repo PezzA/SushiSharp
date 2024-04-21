@@ -15,10 +15,10 @@ using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
 
 using BoardCutter.Games.SushiGo;
+using BoardCutter.Games.SushiGo.Actors.Game;
 using BoardCutter.Games.SushiGo.Actors.GameManager;
 using BoardCutter.Games.SushiGo.Scoring;
 using BoardCutter.Games.SushiGo.Shufflers;
-
 using BoardCutter.Web.Components;
 using BoardCutter.Web.Components.Account;
 using BoardCutter.Web.Hubs;
@@ -66,15 +66,23 @@ builder.Services.AddAkka("MyActorSystem", configurationBuilder =>
 
             var hubWriteActor =
                 system.ActorOf(
-                    Props.Create(() => new HubClientWriterActor<LobbyHub>(resolver.GetService<IHubContext<LobbyHub>>())),
+                    Props.Create(() =>
+                        new HubClientWriterActor<LobbyHub>(resolver.GetService<IHubContext<LobbyHub>>())),
                     "LobbyHubWrite");
 
+            var gameActors = new Dictionary<string, Props>
+            {
+                {
+                    "SushiGo",
+                    Props.Create(() => new GameActor(resolver.GetService<ICardShuffler>(), scorers, hubWriteActor))
+                }
+            };
             var gameManagerActor =
-                    system.ActorOf(
-                        Props.Create(
-                            () => new GameManagerActor(resolver.GetService<ICardShuffler>(), scorers, hubWriteActor)),
- 
-            "GameManagerActor");
+                system.ActorOf(
+                    Props.Create(
+                        () => new GameManagerActor(gameActors, hubWriteActor)),
+                    "GameManagerActor");
+
 
             registry.Register<GameManagerActor>(gameManagerActor);
         });

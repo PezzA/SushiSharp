@@ -2,9 +2,8 @@
 
 public interface IPlayerService
 {
-    Task<Player> AddPlayer(string userName, string connectionId);
+    Task<Player> AddOrUpdatePlayer(string userName, string connectionId, bool shouldExist);
 
-    Task<Player?> GetPlayerById(string id);
 
     Task<Player?> GetPlayerByConnectionId(string id);
 

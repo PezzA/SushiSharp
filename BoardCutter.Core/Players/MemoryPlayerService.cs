@@ -2,26 +2,23 @@
 
 public class MemoryPlayerService : IPlayerService
 {
-    private readonly Dictionary<string, Player?> _playerList = [];
+    private readonly Dictionary<string, Player> _playerList = [];
 
-    public Task<Player> AddPlayer(string userName, string connectionId)
+    public Task<Player> AddOrUpdatePlayer(string userName, string connectionId, bool shouldExist)
     {
-        var player = new Player(connectionId, userName);
-
-        _playerList.Add(player.Id, player);
-
-        return Task.FromResult(player);
-    }
-
-    public Task<Player?> GetPlayerById(string id)
-    {
-        if (!_playerList.TryGetValue(id, out Player? player))
+        if (_playerList.ContainsKey(userName))
         {
-            return Task.FromResult<Player?>(null);
+            _playerList[userName].ConnectionId = connectionId;
+        }
+        else
+        {
+            _playerList[userName] = new Player(connectionId, userName);
+
         }
 
-        return Task.FromResult(player);
+        return Task.FromResult(_playerList[userName]);
     }
+    
 
     public Task<Player?> GetPlayerByConnectionId(string id)
     {
@@ -32,8 +29,12 @@ public class MemoryPlayerService : IPlayerService
 
     public Task<Player?> GetPlayerByUser(string user)
     {
-        var player = _playerList.SingleOrDefault(p => p.Value?.Name == user).Value;
+        if (_playerList.ContainsKey(user))
+        {
+            
+            return Task.FromResult(_playerList[user])!;
+        }
 
-        return Task.FromResult<Player?>(player);
+        return Task.FromResult<Player?>(null);
     }
 }

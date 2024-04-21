@@ -13,12 +13,12 @@
 @inject ISnackbar Snackbar
 @inject IHttpContextAccessor HttpContextAccessor
 @inject IDialogService DialogService
-@inject NavigationManager NavManager
+
 <GameLobby
     Games="_gameList"
     Messages="_messages"
     SendChatMessage="Send"
-    JoinGame="JoinGame" />
+    JoinGame="JoinGame"/>
 
 <MudButton Variant="Variant.Filled" Color="Color.Success" StartIcon="@Icons.Material.Filled.Create" @onclick="Create">Create Game</MudButton>
 
@@ -26,8 +26,6 @@
     [CascadingParameter(Name = "Cookies")] public Dictionary<string, string>? Cookies { get; set; }
 
     private HubConnection? _hubConnection;
-
-    // Each private here represents a separately maintainable facet of client state
     private List<ChatMessage>? _messages = [];
     private List<PublicVisible> _gameList = [];
 
@@ -41,56 +39,15 @@
         Snackbar.Add(message, severity);
     }
 
-
     protected override async Task OnInitializedAsync()
     {
         if (_hubConnection != null) return;
 
-        _hubConnection = new HubConnectionBuilder()
-            .WithUrl(Navigation.ToAbsoluteUri("/lobbyhub"), options =>
-            {
-                if (Cookies == null)
-                {
-                    Cookies = new Dictionary<string, string>();
-                    var cookies = HttpContextAccessor.HttpContext?.Request.Cookies;
-
-                    if (cookies?.Any() == true)
-                    {
-                        foreach (var cookie in cookies)
-                        {
-                            Cookies.Add(cookie.Key, cookie.Value);
-                        }
-                    }
-                }
-
-                options.UseDefaultCredentials = true;
-                var cookieCount = Cookies.Count();
-                var cookieContainer = new CookieContainer(cookieCount);
-                foreach (var cookie in Cookies)
-                    cookieContainer.Add(new Cookie(
-                        cookie.Key,
-                        WebUtility.UrlEncode(cookie.Value),
-                        path: "/",
-                        domain: Navigation.ToAbsoluteUri("/").Host));
-                options.Cookies = cookieContainer;
-
-                foreach (var header in Cookies)
-                    options.Headers.Add(header.Key, header.Value);
-
-                options.HttpMessageHandlerFactory = (input) =>
-                {
-                    var clientHandler = new HttpClientHandler
-                    {
-                        PreAuthenticate = true,
-                        CookieContainer = cookieContainer,
-                        UseCookies = true,
-                        UseDefaultCredentials = true,
-                    };
-                    return clientHandler;
-                };
-            })
-            .Build();
-
+        _hubConnection = HubBuilderExtensions.CreateHub(
+            Navigation.ToAbsoluteUri("/lobbyhub"),
+            HttpContextAccessor.HttpContext?.Request.Cookies,
+            Cookies
+        );
 
         _hubConnection.On(ServerMessages.GameList, async (string message) =>
         {
@@ -113,6 +70,19 @@
 
             await InvokeAsync(StateHasChanged);
         });
+        
+        _hubConnection.On(ServerMessages.SetPlayerGame, async (string message) =>
+        {
+            await Debug($"{ServerMessages.SetPlayerGame}: {message}");
+
+            var publicVisible = string.IsNullOrEmpty(message)
+                ? null
+                : JsonConvert.DeserializeObject<PublicVisible>(message);
+            
+            Navigation.NavigateTo($"/{publicVisible?.GameTag}");
+
+            await InvokeAsync(StateHasChanged);
+        });
 
         _hubConnection.On(ServerMessages.ErrorMessage, async (string message) =>
         {
@@ -125,20 +95,11 @@
         await _hubConnection.SendAsync(ClientMessage.InitClient);
     }
 
-
     private async Task JoinGame(string gameId)
     {
         if (_hubConnection is not null)
         {
             await _hubConnection.SendAsync(ClientMessage.JoinGame, gameId);
-        }
-    }
-
-    private async Task CreateGame()
-    {
-        if (_hubConnection is not null)
-        {
-            await _hubConnection.SendAsync(ClientMessage.CreateGame);
         }
     }
 
@@ -160,12 +121,14 @@
 
     private async Task Create()
     {
-        var options = new DialogOptions { CloseOnEscapeKey = true , MaxWidth=MaxWidth.Large};
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Large };
         var dialog = await DialogService.ShowAsync<CreateGame>("Simple Dialog", options);
 
         var result = await dialog.Result;
         
-        NavManager.NavigateTo($"/{result.Data}");
+        if (_hubConnection is not null && !result.Canceled)
+        {
+            await _hubConnection.SendAsync(ClientMessage.CreateGame, result.Data);
+        }
     }
-
 }

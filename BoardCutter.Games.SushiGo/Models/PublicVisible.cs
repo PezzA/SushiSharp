@@ -4,6 +4,7 @@ namespace BoardCutter.Games.SushiGo.Models;
 
 public class PublicVisible
 {
+    public string GameTag => "SushiGo";
     public string Id { get; set; } = string.Empty;
 
     public GameStatus Status{ get; set; }

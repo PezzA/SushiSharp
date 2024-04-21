@@ -12,30 +12,43 @@ namespace BoardCutter.Games.SushiGo.Actors.GameManager;
 
 public class GameManagerActor : ReceiveActor
 {
-    private readonly ICardShuffler _cardShuffler;
-    private readonly Dictionary<CardType, IScorer> _scorers;
+    private readonly Dictionary<string, Props> _gameActors;
     private readonly IActorRef _clientWriterActor;
 
     private readonly Dictionary<string, IActorRef> _gameActorList = [];
     private readonly Dictionary<string, PublicVisible> _gameDataList = [];
 
-    public GameManagerActor(ICardShuffler cardShuffler, Dictionary<CardType, IScorer> scorers,
-        IActorRef clientWriteActor)
+    public GameManagerActor(Dictionary<string, Props> gameActors, IActorRef clientWriteActor)
     {
-        _cardShuffler = cardShuffler;
-        _scorers = scorers;
+        _gameActors = gameActors;
         _clientWriterActor = clientWriteActor;
+        
+        // Game LifeCycle
+        Receive<GameActorMessages.GameCreated>(GameCreated);
+        Receive<GameActorMessages.GameUpdated>(UpdateGame);
+        ReceiveAsync<GameActorMessages.GameEnded>(EndGame);
+        
+        
+        Receive<GameActorMessages.GetGameListRequest>(GetGameList);
+        
         Receive<GameActorMessages.CreateGameRequest>(CreateGame);
         Receive<GameActorMessages.JoinGameRequest>(JoinGame);
         Receive<GameActorMessages.LeaveGameRequest>(LeaveGame);
         Receive<GameActorMessages.StartGameRequest>(StartGame);
-        Receive<GameActorMessages.UpdateGameNotification>(UpdateGame);
-        ReceiveAsync<GameActorMessages.GameEndedNotification>(EndGame);
-        Receive<GameActorMessages.GetGameListRequest>(GetGameList);
         Receive<GameActorMessages.GamePlayRequest>(SubmitTurn);
     }
 
-    private async Task EndGame(GameActorMessages.GameEndedNotification message)
+    private void GameCreated(GameActorMessages.GameCreated message)
+    {
+        _gameDataList[message.GameData.Id] = message.GameData; 
+       
+        var gameList = _gameDataList.Select(entry => entry.Value).ToArray();
+        
+        _clientWriterActor.Tell(new HubWriterActorMessages.WriteAll(ServerMessages.GameList,
+            JsonConvert.SerializeObject(gameList)));
+    }
+
+    private async Task EndGame(GameActorMessages.GameEnded message)
     {
         if (!_gameDataList.ContainsKey(message.GameId))
         {
@@ -60,7 +73,7 @@ public class GameManagerActor : ReceiveActor
             JsonConvert.SerializeObject(gameList)));
     }
 
-    private void UpdateGame(GameActorMessages.UpdateGameNotification message)
+    private void UpdateGame(GameActorMessages.GameUpdated message)
     {
         _gameDataList[message.GameData.Id] = message.GameData;
 
@@ -76,13 +89,14 @@ public class GameManagerActor : ReceiveActor
     private void CreateGame(GameActorMessages.CreateGameRequest message)
     {
         var gameId = Guid.NewGuid().ToString();
+        
+        var gameActor = Context.ActorOf(_gameActors[message.GameTag], $"{message.GameTag}-{gameId}");
 
-        var gameActor = Context.ActorOf(Props.Create(
-            () => new GameActor(_cardShuffler, _scorers, _clientWriterActor, message.Player, gameId)), gameId);
-
-        gameActor.Tell(message);
-
-        _gameActorList[gameId] = gameActor;
+        var taggedMessage = message with { GameId = gameId };
+        
+        gameActor.Tell(taggedMessage);
+        
+        _gameActorList.Add(gameId, gameActor);
     }
 
     private void GenericPlayerGameRequest<T>(T message) where T : GameActorMessages.PlayerGameRequest

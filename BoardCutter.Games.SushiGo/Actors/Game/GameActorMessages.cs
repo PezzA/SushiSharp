@@ -13,7 +13,7 @@ public abstract class GameActorMessages
 
     public record GetGameListRequest(Player Player) : PlayerRequest(Player);
 
-    public record CreateGameRequest(Player Player) : PlayerRequest(Player);
+    public record CreateGameRequest(Player Player, string GameTag, string? GameId = null) : PlayerRequest(Player);
 
     public record StartGameRequest(Player Player, string GameId) : PlayerGameRequest(Player, GameId);
 
@@ -21,9 +21,10 @@ public abstract class GameActorMessages
 
     public record LeaveGameRequest(Player Player, string GameId) : PlayerGameRequest(Player, GameId);
 
-    public record UpdateGameNotification(PublicVisible GameData) : GameNotification(GameData);
 
-    public record GameEndedNotification(string GameId);
+    public record GameCreated(PublicVisible GameData) : GameNotification(GameData);
+    public record GameUpdated(PublicVisible GameData) : GameNotification(GameData);
+    public record GameEnded(string GameId);
 
     public record GamePlayRequest(Player Player, string GameId, List<Card>? Played);
 }

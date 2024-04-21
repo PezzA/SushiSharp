@@ -31,20 +31,20 @@ public class GameActorValidations : TestKit
 
         var gameId = "TestGameId";
         var gameActorProps = Props.Create(() =>
-            new BoardCutter.Games.SushiGo.Actors.Game.GameActor(new RiggedCardShuffler(new List<Card>()), new Dictionary<CardType, IScorer>(),  writerProbe, creatorPlayer, gameId));
+            new BoardCutter.Games.SushiGo.Actors.Game.GameActor(new RiggedCardShuffler(new List<Card>()), new Dictionary<CardType, IScorer>(),  writerProbe));
 
         var gameActor = Sys.ActorOf(gameActorProps, "gameActor");
 
-        gameActor.Tell(new GameActorMessages.CreateGameRequest(creatorPlayer));
+        gameActor.Tell(new GameActorMessages.CreateGameRequest(creatorPlayer, gameId));
 
-        ExpectMsg<GameActorMessages.UpdateGameNotification>();
+        ExpectMsg<GameActorMessages.GameCreated>();
         writerProbe.ExpectMsg<HubWriterActorMessages.AddToGroup>();
         writerProbe.ExpectMsg<HubWriterActorMessages.WriteClient>();
 
         // Adding the first guest, should be fine
         gameActor.Tell(new GameActorMessages.JoinGameRequest(guestOne, gameId));
 
-        ExpectMsg<GameActorMessages.UpdateGameNotification>();
+        ExpectMsg<GameActorMessages.GameUpdated>();
         writerProbe.ExpectMsg<HubWriterActorMessages.AddToGroup>();
         writerProbe.ExpectMsg<HubWriterActorMessages.WriteGroup>();
 

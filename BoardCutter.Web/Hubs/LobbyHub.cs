@@ -15,11 +15,11 @@ using Newtonsoft.Json;
 namespace BoardCutter.Web.Hubs;
 
 [Authorize]
-public class LobbyHub(IRequiredActor<GameManagerActor> gameManagerActor, IPlayerService playerService) : Hub
+public class LobbyHub(IRequiredActor<GameManagerActor> gameManagerActor, IPlayerService playerService, IChatService chatService) : Hub
 {
     private readonly IActorRef _gameManagerActor = gameManagerActor.ActorRef;
 
-    private async Task BroadcastLobbyChat(IChatService chatService, bool callerOnly = false)
+    private async Task BroadcastLobbyChat(bool callerOnly = false)
     {
         var messages = await chatService.GetMessages("Lobby");
 
@@ -33,7 +33,7 @@ public class LobbyHub(IRequiredActor<GameManagerActor> gameManagerActor, IPlayer
         }
     }
 
-    public async Task SendLobbyChat(string message, IChatService chatService, IPlayerService playerService)
+    public async Task SendLobbyChat(string message)
     {
         var player = await playerService.GetPlayerByConnectionId(Context.ConnectionId);
 
@@ -44,7 +44,7 @@ public class LobbyHub(IRequiredActor<GameManagerActor> gameManagerActor, IPlayer
 
         await chatService.Add("Lobby", new ChatMessage(player.Name, player.AvatarPath(), DateTime.Now, message));
 
-        await BroadcastLobbyChat(chatService);
+        await BroadcastLobbyChat();
     }
 
     private async Task GenericPlayerRequest<T>() where T : GameActorMessages.PlayerRequest
@@ -72,8 +72,20 @@ public class LobbyHub(IRequiredActor<GameManagerActor> gameManagerActor, IPlayer
         
         _gameManagerActor.Tell(message);
     }
-    
-    public Task CreateGame() => GenericPlayerRequest<GameActorMessages.CreateGameRequest>();
+
+    public async Task CreateGame(string gameTag)
+    {
+        var player = await playerService.GetPlayerByConnectionId(Context.ConnectionId);
+
+        if (player == null)
+        {
+            return;
+        }
+
+        var message = new GameActorMessages.CreateGameRequest(player, gameTag);
+        
+        _gameManagerActor.Tell(message);
+    }
 
     public async Task SubmitTurn(string gameId, string payload)
     {
@@ -96,7 +108,20 @@ public class LobbyHub(IRequiredActor<GameManagerActor> gameManagerActor, IPlayer
     
     public Task JoinGame(string gameId) => GenericPlayerGameRequest<GameActorMessages.JoinGameRequest>(gameId);
 
-    public async Task InitClient(IChatService chatService)
+    public async Task InitClientGame()
+    {
+        var loggedInUserName = Context.User?.Identity?.Name;
+
+        if (string.IsNullOrEmpty(loggedInUserName)) throw new InvalidDataException("Should have a user");
+
+        var player = await playerService.AddOrUpdatePlayer(loggedInUserName, Context.ConnectionId, true);
+
+        if (player == null) throw new InvalidDataException("Could not find user");
+        
+        await Clients.Caller.SendAsync("SetIdentity", player.Id);
+    }
+    
+    public async Task InitClient()
     {
         var loggedInUserName = Context.User?.Identity?.Name;
 
@@ -105,11 +130,11 @@ public class LobbyHub(IRequiredActor<GameManagerActor> gameManagerActor, IPlayer
             throw new InvalidOperationException("Could no determine logged in user");
         }
 
-        var player = await playerService.AddPlayer(loggedInUserName, Context.ConnectionId);
+        var player = await playerService.AddOrUpdatePlayer(loggedInUserName, Context.ConnectionId, false);
 
         await Clients.Caller.SendAsync("SetIdentity", player.Id);
 
-        await BroadcastLobbyChat(chatService, true);
+        await BroadcastLobbyChat(true);
 
         await GenericPlayerRequest<GameActorMessages.GetGameListRequest>();
     }
