@@ -22,14 +22,14 @@ public class MakiRollScorerTests
         var player1Tableau = CreatePlayedTableau("P1",
         [
             new Card(1, [CardSymbol.MakiRoll, CardSymbol.MakiRoll],
-                CardType.MakiRolls)
+                CardType.MakiRolls, string.Empty, string.Empty)
         ]);
 
         // Player 2 has 3 maki rolls
         var player2Tableau = CreatePlayedTableau("P2",
         [
             new Card(1, [CardSymbol.MakiRoll, CardSymbol.MakiRoll, CardSymbol.MakiRoll],
-                CardType.MakiRolls)
+                CardType.MakiRolls, string.Empty, string.Empty)
         ]);
 
         var scorer = new MakiRollScorer();
@@ -50,14 +50,14 @@ public class MakiRollScorerTests
         var player1Tableau = CreatePlayedTableau("P1",
         [
             new Card(1, [CardSymbol.MakiRoll, CardSymbol.MakiRoll],
-                CardType.MakiRolls)
+                CardType.MakiRolls, string.Empty, string.Empty)
         ]);
 
         // Player 2 has 3 maki rolls
         var player2Tableau = CreatePlayedTableau("P2",
         [
             new Card(1, [CardSymbol.Sashimi],
-                CardType.Sashimi)
+                CardType.Sashimi, string.Empty, string.Empty)
         ]);
 
         var scorer = new MakiRollScorer();
@@ -75,14 +75,14 @@ public class MakiRollScorerTests
         var player1Tableau = CreatePlayedTableau("P1",
         [
             new Card(1, [CardSymbol.Tempura],
-                CardType.Tempura)
+                CardType.Tempura, string.Empty, string.Empty)
         ]);
 
         // Player 2 has 3 maki rolls
         var player2Tableau = CreatePlayedTableau("P2",
         [
             new Card(1, [CardSymbol.Sashimi],
-                CardType.Sashimi)
+                CardType.Sashimi, string.Empty, string.Empty)
         ]);
 
         var scorer = new MakiRollScorer();

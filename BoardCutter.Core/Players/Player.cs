@@ -1,6 +1,6 @@
 ﻿using SpookilySharp;
 
-namespace BoardCutter.Games.SushiGo.Players;
+namespace BoardCutter.Core.Players;
 
 public class Player
 {

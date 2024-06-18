@@ -16,6 +16,7 @@ public static class ServerMessages
 public static class ClientMessage
 {
     public const string InitClient = "InitClient";
+    public const string InitClientGame = "InitClientGame";
     public const string StartGame = "StartGame";
     public const string JoinGame = "JoinGame";
     public const string LeaveGame = "LeaveGame";

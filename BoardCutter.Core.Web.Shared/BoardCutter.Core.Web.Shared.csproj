@@ -25,4 +25,8 @@
     <AdditionalFiles Include="Chat\Chat.razor" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\BoardCutter.Core\BoardCutter.Core.csproj" />
+  </ItemGroup>
+
 </Project>

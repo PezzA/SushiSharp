@@ -1,0 +1,34 @@
+﻿@using BoardCutter.Games.SushiGo.Models
+@using BoardCutter.Core.Web.Shared
+<div style="display: flex; flex-direction: column;margin:10px">
+    @foreach (var game in Games)
+    {
+        <MudCard Outlined="true" Style="width:300px">
+            <MudCardHeader>
+                <CardHeaderAvatar>
+                    <PlayerAvatar Name="@game.Players[0].Name" AvatarPath="@game.Players[0].AvatarPath()"></PlayerAvatar>
+                </CardHeaderAvatar>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">@game.Players[0].Name's game</MudText>
+                    <MudText Typo="Typo.body2">Sushi Go!</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudText Typo="Typo.body2">Game Status: @game.Status</MudText>
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton StartIcon="@Icons.Material.Filled.LabelImportant" Color="Color.Success" @onclick="() => Join(game.Id)">Join Game</MudButton>
+            </MudCardActions>
+        </MudCard>
+    }
+</div>
+
+@code {
+    [Parameter] public required List<PublicVisible> Games { get; set; }
+    [Parameter] public EventCallback<string> JoinGame { get; set; }
+
+    private async Task Join(string guid)
+    {
+        await JoinGame.InvokeAsync(guid);
+    }
+}

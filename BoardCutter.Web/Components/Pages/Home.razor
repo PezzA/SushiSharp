@@ -1,3 +1,136 @@
 ﻿@page "/"
+@rendermode InteractiveServer
 
-<h1>Welcome to Sushi Sharp.</h1>
+@using BoardCutter.Core.Web.Shared.Chat
+@using BoardCutter.Games.SushiGo
+@using BoardCutter.Games.SushiGo.Models
+@using BoardCutter.Web.Components.Lobby
+
+@implements IAsyncDisposable
+@attribute [Authorize]
+@inject NavigationManager Navigation
+@inject IJSRuntime JsRuntime
+@inject ISnackbar Snackbar
+@inject IHttpContextAccessor HttpContextAccessor
+@inject IDialogService DialogService
+
+<GameLobby
+    Games="_gameList"
+    Messages="_messages"
+    SendChatMessage="Send"
+    JoinGame="JoinGame"/>
+
+<MudButton Variant="Variant.Filled" Color="Color.Success" StartIcon="@Icons.Material.Filled.Create" @onclick="Create">Create Game</MudButton>
+
+@code {
+    [CascadingParameter(Name = "Cookies")] public Dictionary<string, string>? Cookies { get; set; }
+
+    private HubConnection? _hubConnection;
+    private List<ChatMessage>? _messages = [];
+    private List<PublicVisible> _gameList = [];
+
+    private async Task Debug(string message)
+    {
+        await JsRuntime.InvokeAsync<string>("console.log", message);
+    }
+
+    private void Toast(string message, Severity severity)
+    {
+        Snackbar.Add(message, severity);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (_hubConnection != null) return;
+
+        _hubConnection = HubBuilderExtensions.CreateHub(
+            Navigation.ToAbsoluteUri("/lobbyhub"),
+            HttpContextAccessor.HttpContext?.Request.Cookies,
+            Cookies
+        );
+
+        _hubConnection.On(ServerMessages.GameList, async (string message) =>
+        {
+            await Debug($"{ServerMessages.GameList}: {message}");
+
+            _gameList = string.IsNullOrEmpty(message)
+                ? []
+                : JsonConvert.DeserializeObject<PublicVisible[]>(message)!.ToList();
+
+            await InvokeAsync(StateHasChanged);
+        });
+
+        _hubConnection.On(ServerMessages.LobbyChat, async (string message) =>
+        {
+            await Debug($"{ServerMessages.LobbyChat}: {message}");
+
+            _messages = string.IsNullOrEmpty(message)
+                ? []
+                : JsonConvert.DeserializeObject<List<ChatMessage>>(message);
+
+            await InvokeAsync(StateHasChanged);
+        });
+        
+        _hubConnection.On(ServerMessages.SetPlayerGame, async (string message) =>
+        {
+            await Debug($"{ServerMessages.SetPlayerGame}: {message}");
+
+            var publicVisible = string.IsNullOrEmpty(message)
+                ? null
+                : JsonConvert.DeserializeObject<PublicVisible>(message);
+
+            if (publicVisible == null) return;
+            
+            Navigation.NavigateTo($"/{publicVisible.GameTag}/{publicVisible.Id}");
+
+            await InvokeAsync(StateHasChanged);
+        });
+
+        _hubConnection.On(ServerMessages.ErrorMessage, async (string message) =>
+        {
+            Toast(message, Severity.Warning);
+            await InvokeAsync(StateHasChanged);
+        });
+
+
+        await _hubConnection.StartAsync();
+        await _hubConnection.SendAsync(ClientMessage.InitClient);
+    }
+
+    private async Task JoinGame(string gameId)
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.SendAsync(ClientMessage.JoinGame, gameId);
+        }
+    }
+
+    private async Task Send(string message)
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.SendAsync(ClientMessage.SendLobbyChat, message);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.DisposeAsync();
+        }
+    }
+
+    private async Task Create()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Large };
+        var dialog = await DialogService.ShowAsync<CreateGame>("Simple Dialog", options);
+
+        var result = await dialog.Result;
+        
+        if (_hubConnection is not null && !result.Canceled)
+        {
+            await _hubConnection.SendAsync(ClientMessage.CreateGame, result.Data);
+        }
+    }
+}

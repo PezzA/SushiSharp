@@ -1,0 +1,177 @@
+﻿@using BoardCutter.Games.SushiGo
+@using BoardCutter.Games.SushiGo.Decks
+@using BoardCutter.Games.SushiGo.Models
+@using BoardCutter.Games.SushiGo.Web.Setup
+
+@if (PlayerVisible != null && ViewerVisible != null && TurnState != null && CurrentPlayer != string.Empty)
+{
+    <div class="sushi-board" style="width: 1200px; height:@BoardHeight()px;">
+        <!-- Action Panel -->
+        <div style="position: absolute;width: 1200px;height: 60px; top:20px; background-color: #0a53be;color:#FFFFFF; display: flex;flex-direction: row; justify-content: space-between;border-radius: 5px;padding: 10px;">
+            <div>
+                <h3>Round: @ViewerVisible.RoundNumber.</h3>
+            </div>
+            <div>
+                @((MarkupString)SelectionText())
+            </div>
+            <div>
+                @if (!_isSubmitted)
+                {
+                    <MudButton Disabled="PlayerVisible.CurrentPlay.Count == 0"
+                               ButtonType="ButtonType.Button"
+                               Variant="Variant.Filled"
+                               Color="Color.Warning"
+                               StartIconIcon="@Icons.Material.Filled.Send"
+                               @onclick="Submit">
+                        Lock in!
+                    </MudButton>
+                }
+                else
+                {
+                    <MudButton Disabled="PlayerVisible.CurrentPlay.Count == 0"
+                               ButtonType="ButtonType.Button"
+                               Variant="Variant.Filled"
+                               Color="Color.Success"
+                               StartIcon="@Icons.Material.Filled.CheckCircle"
+                               @onclick="Submit">
+                        Change!
+                    </MudButton>
+                }
+            </div>
+        </div>
+
+        <!-- Player Selection Conveyor line -->
+        <div style="position: absolute;width: 1200px;height: 130px; top: 120px; background-color: #999">
+        </div>
+
+        <!-- Player's Hand -->
+        @foreach (var (card, index) in PlayerVisible.Hand.Select(((card, i) => (card, i))))
+        {
+            <TableCard
+                @key="card.Id"
+                Card="card"
+                Top="80"
+                Left="30 + index * (BoardSettings.CardWidth + BoardSettings.CardGapNormal)"
+                IsSelected="PlayerVisible.CurrentPlay.Any(c => c.Id == card.Id)"
+                IsLocked="PlayerVisible.CurrentPlay.All(c => c.Id != card.Id) && MaxCardSelected()"
+                SelectChange="SelectCard"/>
+        }
+
+        <!-- Current Player Tableau -->
+        <PlayerTableau Top="HeaderHeight"
+                       Player="PublicVisible.Players.Single(p => p.Id == CurrentPlayer)"
+                       Played="ViewerVisible.OpponentStates[CurrentPlayer].Played"
+                       Side="ViewerVisible.OpponentStates[CurrentPlayer].Sideboard"/>
+
+        <!-- Opponent Tableau's -->
+        @foreach (var (player, index) in PublicVisible.Players
+                      .Where(p => p.Id != CurrentPlayer)
+                      .Select(((player, i) => (player, i))))
+        {
+            <PlayerTableau
+                Top="HeaderHeight + (240 * (index + 1))"
+                Player="player"
+                Played="ViewerVisible.OpponentStates[player.Id].Played"
+                Side="ViewerVisible.OpponentStates[player.Id].Sideboard"/>
+        }
+    </div>
+}
+else
+{
+    <p>Game is running but we have no player state?</p>
+}
+
+@code {
+    [Parameter] public required PublicVisible PublicVisible { get; set; }
+    [Parameter] public PlayerVisible? PlayerVisible { get; set; }
+    [Parameter] public ViewerVisible? ViewerVisible { get; set; }
+    [Parameter] public Dictionary<string, bool>? TurnState { get; set; }
+    [Parameter] public EventCallback<SubmitTurnArgs> SubmitTurn { get; set; }
+    [Parameter] public string CurrentPlayer { get; set; } = string.Empty;
+
+    private readonly List<Card> _deck = SushiGoClassic.GetDeck();
+
+    private bool _isSubmitted = false;
+
+    private const int HeaderHeight = 260;
+
+    private int BoardHeight()
+    {
+        return HeaderHeight + (PublicVisible.Players.Count * 240);
+    }
+
+    #region LifeCycle Events
+
+    protected override void OnParametersSet()
+    {
+        if (PlayerVisible == null || ViewerVisible == null) return;
+
+        if (PlayerVisible.CurrentPlay.Count == 0)
+        {
+            _isSubmitted = false;
+        }
+    }
+
+    #endregion
+
+    private async Task Submit()
+    {
+        if (PlayerVisible == null) return;
+
+        _isSubmitted = true;
+
+        await SubmitTurn.InvokeAsync(new SubmitTurnArgs
+        {
+            GameId = PublicVisible.Id,
+            Cards = PlayerVisible.CurrentPlay
+        });
+    }
+
+
+    private async Task SelectCard(CardSelectArgs args)
+    {
+        if (PlayerVisible == null) return;
+
+        if (args.Selected)
+        {
+            PlayerVisible.CurrentPlay.Add(args.Card);
+        }
+        else
+        {
+            PlayerVisible.CurrentPlay.Remove(args.Card);
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private string SelectionText()
+    {
+        if (_isSubmitted)
+        {
+            return "Your play is sent! <em>you can still change your play</em>";
+        }
+
+        if (MaxCardSelected())
+        {
+            return "All cards selected, you may lock in your play!";
+        }
+
+        return _hasChopsticks()
+            ? "You may play a card, and optionally play one <em>additional</em> card in exchange for your chopsticks!"
+            : "You may play a card.";
+    }
+
+    private bool MaxCardSelected()
+    {
+        if (PlayerVisible == null) return false;
+        return (!_hasChopsticks() && PlayerVisible.CurrentPlay.Count() == 1) ||
+               (_hasChopsticks() && PlayerVisible.CurrentPlay.Count() == 2);
+    }
+
+    private bool _hasChopsticks()
+    {
+        if (PlayerVisible == null || ViewerVisible == null) return false;
+        return ViewerVisible.OpponentStates[PlayerVisible.PlayerId].Played.Any(c => c.Type == CardType.Chopsticks);
+    }
+
+}

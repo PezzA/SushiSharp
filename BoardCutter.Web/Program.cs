@@ -5,6 +5,7 @@ using BoardCutter.Core.Actors.HubWriter;
 using BoardCutter.Core.Web.Components.Account;
 using BoardCutter.Core.Web.Shared.Chat;
 using BoardCutter.Core.Data;
+using BoardCutter.Core.Players;
 
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -14,11 +15,10 @@ using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
 
 using BoardCutter.Games.SushiGo;
+using BoardCutter.Games.SushiGo.Actors.Game;
 using BoardCutter.Games.SushiGo.Actors.GameManager;
-using BoardCutter.Games.SushiGo.Players;
 using BoardCutter.Games.SushiGo.Scoring;
 using BoardCutter.Games.SushiGo.Shufflers;
-
 using BoardCutter.Web.Components;
 using BoardCutter.Web.Components.Account;
 using BoardCutter.Web.Hubs;
@@ -42,6 +42,7 @@ builder.Services.AddSingleton<IScorer, SashimiScorer>();
 builder.Services.AddSingleton<IScorer, NagiriScorer>();
 builder.Services.AddSingleton<IScorer, PuddingScorer>();
 
+builder.Services.AddSingleton<IPlayerService, MemoryPlayerService>();
 //builder.Services.AddResponseCompression(opts =>
 //{
 //    opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
@@ -63,18 +64,27 @@ builder.Services.AddAkka("MyActorSystem", configurationBuilder =>
                 { CardType.Tempura, new TempuraScorer() },
             };
 
-
             var hubWriteActor =
                 system.ActorOf(
-                    Props.Create(() => new HubClientWriterActor<LobbyHub>(resolver.GetService<IHubContext<LobbyHub>>())),
+                    Props.Create(() =>
+                        new HubClientWriterActor<LobbyHub>(
+                            resolver.GetService<IHubContext<LobbyHub>>(),
+                            resolver.GetService<IPlayerService>())),
                     "LobbyHubWrite");
 
+            var gameActors = new Dictionary<string, Props>
+            {
+                {
+                    "SushiGo",
+                    Props.Create(() => new GameActor(resolver.GetService<ICardShuffler>(), scorers, hubWriteActor))
+                }
+            };
             var gameManagerActor =
-                    system.ActorOf(
-                        Props.Create(
-                            () => new GameManagerActor(resolver.GetService<ICardShuffler>(), scorers, hubWriteActor)),
- 
-            "GameManagerActor");
+                system.ActorOf(
+                    Props.Create(
+                        () => new GameManagerActor(gameActors, hubWriteActor)),
+                    "GameManagerActor");
+
 
             registry.Register<GameManagerActor>(gameManagerActor);
         });
@@ -104,7 +114,6 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 builder.Services.AddSingleton<IChatService, MemoryChatService>();
-builder.Services.AddSingleton<IPlayerService, MemoryPlayerService>();
 builder.Services.AddSingleton<ICardShuffler, RandomCardShuffler>();
 
 builder.Services.AddMudServices();

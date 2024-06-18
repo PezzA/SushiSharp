@@ -1,0 +1,23 @@
+﻿@using BoardCutter.Games.SushiGo.Web.Setup
+@using BoardCutter.Games.SushiGo.Models
+
+@foreach (var card in CardDeck)
+{
+    var cardState = CardStates[card.Id];
+    
+    <TableCard @key="card.Id"
+               Left="cardState.Left"
+               Top="cardState.Top"
+               Card="card"
+               ReadOnly="cardState.ReadOnly"
+               Anim="@cardState.AnimClass"
+               IsSelected="cardState.IsSelected"
+               IsLocked="cardState.IsLocked"
+               SelectChange="SelectChange"/>
+}
+
+@code {
+    [Parameter] public required List<Card> CardDeck { get; set; }
+    [Parameter] public required Dictionary<int, CardState> CardStates { get; set; }
+    [Parameter] public EventCallback<CardSelectArgs> SelectChange { get; set; }
+}

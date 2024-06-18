@@ -7,18 +7,15 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Akka" Version="1.5.18" />
       <PackageReference Include="Microsoft.AspNetCore.SignalR.Client.Core" Version="8.0.3" />
-      <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+      <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" Version="8.0.4" />
+      <PackageReference Include="SpookilySharp" Version="1.2.0" />
     </ItemGroup>
 
     <ItemGroup>
-        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+      <Reference Include="Microsoft.AspNetCore.Http.Features">
+        <HintPath>C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App\8.0.0\Microsoft.AspNetCore.Http.Features.dll</HintPath>
+      </Reference>
     </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\BoardCutter.Core\BoardCutter.Core.csproj" />
-    </ItemGroup>
-
 
 </Project>

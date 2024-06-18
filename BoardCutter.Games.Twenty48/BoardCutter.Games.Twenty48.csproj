@@ -8,17 +8,10 @@
 
     <ItemGroup>
       <PackageReference Include="Akka" Version="1.5.18" />
-      <PackageReference Include="Microsoft.AspNetCore.SignalR.Client.Core" Version="8.0.3" />
-      <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     </ItemGroup>
 
     <ItemGroup>
-        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+      <ProjectReference Include="..\BoardCutter.Games.SushiGo\BoardCutter.Games.SushiGo.csproj" />
     </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\BoardCutter.Core\BoardCutter.Core.csproj" />
-    </ItemGroup>
-
 
 </Project>

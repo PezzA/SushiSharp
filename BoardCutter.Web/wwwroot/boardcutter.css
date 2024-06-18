@@ -1,0 +1,40 @@
+﻿body {
+    background: linear-gradient(60deg, #011f4b 0%, #005b96 100%);
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 80px;
+    width: 100%;
+    padding-left: 30px;
+    padding-right: 30px;
+}
+
+.logo {
+    font-family: "Princess Sofia", cursive;
+    color: white;
+    font-size: 32pt;
+    font-weight: 100;
+    font-style: normal;
+    text-shadow: 2px 2px 4px black;
+}
+
+.header-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 80px;
+    background: #000000;
+}
+
+main {
+    min-height: 1500px;
+}

@@ -1,14 +1,22 @@
-﻿<MudAvatar Elevation="2" >
-    <MudImage Src="@AvatarPath" Alt="@Name" ></MudImage>
-</MudAvatar>
-@if (ShowName)
-{
-    <MudText>@Name</MudText>
-}
+﻿<div style="display: flex;flex-direction: row; align-content: flex-start;gap: 10px;padding-left: 15px">
+
+    <MudBadge Color="PlayLogged ? Color.Success : Color.Warning" Overlap="true" Bordered="true" Visible="ShowBadge">
+        <MudAvatar Rounded="true" Elevation="2">
+            <MudImage Src="@AvatarPath" Alt="@Name"></MudImage>
+        </MudAvatar>
+    </MudBadge>
+
+    @if (ShowName)
+    {
+        <MudText>@Name</MudText>
+    }
+</div>
 
 @code {
 
     [Parameter] public required string AvatarPath { get; set; }
     [Parameter] public required string Name { get; set; }
     [Parameter] public bool ShowName { get; set; }
+    [Parameter] public bool ShowBadge { get; set; }
+    [Parameter] public bool PlayLogged { get; set; }
 }

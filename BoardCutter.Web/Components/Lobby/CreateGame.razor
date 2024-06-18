@@ -1,0 +1,39 @@
+﻿<MudDialog>
+    <DialogContent>
+        <MudCard>
+            <MudCardMedia Image="images/door.jpg" Height="200" />
+            <MudCardContent>
+                <MudText Typo="Typo.h5">Sushi Go</MudText>
+                <MudText Typo="Typo.body2">Players: 2 to 8.</MudText>
+                <MudText Typo="Typo.body2">Family friendly card drafting game.</MudText>
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => StartGame("SushiGo"))">Play!</MudButton>
+            </MudCardActions>
+        </MudCard>
+        <MudCard>
+            <MudCardMedia Image="images/door.jpg" Height="200" />
+            <MudCardContent>
+                <MudText Typo="Typo.h5">2048</MudText>
+                <MudText Typo="Typo.body2">Players: 1</MudText>
+                <MudText Typo="Typo.body2">The original merge game.</MudText>
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => StartGame("2048"))">Play!</MudButton>
+            </MudCardActions>
+        </MudCard>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter] public required MudDialogInstance MudDialog { get; set; }
+
+    public void StartGame(string game)
+    {
+        MudDialog.Close(DialogResult.Ok(game));
+    }
+
+    void Cancel() => MudDialog.Cancel();
+}
