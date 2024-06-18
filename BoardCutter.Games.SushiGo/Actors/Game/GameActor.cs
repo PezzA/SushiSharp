@@ -321,13 +321,13 @@ public class GameActor : ReceiveActor
     {
         if (_players.Count >= _parameters.MaxPlayers)
         {
-            SendError(message.Player, "Max players in game.");
+            SendError(message.Player, Resources.ResMaxPlayers);
             return;
         }
 
         if (_players.Any(p => p.Id == message.Player.Id))
         {
-            SendError(message.Player, "Client is already in a game.");
+            SendError(message.Player, Resources.ResClientAlreadyInGame);
             return;
         }
 
