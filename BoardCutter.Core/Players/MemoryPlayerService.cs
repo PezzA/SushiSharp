@@ -18,7 +18,6 @@ public class MemoryPlayerService : IPlayerService
 
         return Task.FromResult(_playerList[userName]);
     }
-    
 
     public Task<Player?> GetPlayerByConnectionId(string id)
     {
@@ -31,7 +30,6 @@ public class MemoryPlayerService : IPlayerService
     {
         if (_playerList.ContainsKey(user))
         {
-            
             return Task.FromResult(_playerList[user])!;
         }
 

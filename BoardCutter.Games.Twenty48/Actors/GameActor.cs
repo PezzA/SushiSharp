@@ -241,7 +241,6 @@ public class GameActor : ReceiveActor
 
     private void CreateGameRequest(GameActorMessages.CreateGameRequest message)
     {
-        _hubWriterActor.Tell(new HubWriterActorMessages.AddToGroup(_gameId, _owner.ConnectionId));
     }
 
     private void SetupRequest(GameActorMessages.SetupGameRequest message)

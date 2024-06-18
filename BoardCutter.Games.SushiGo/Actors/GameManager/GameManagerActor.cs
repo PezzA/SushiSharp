@@ -36,6 +36,17 @@ public class GameManagerActor : ReceiveActor
         Receive<GameActorMessages.LeaveGameRequest>(LeaveGame);
         Receive<GameActorMessages.StartGameRequest>(StartGame);
         Receive<GameActorMessages.GamePlayRequest>(SubmitTurn);
+        Receive < GameActorMessages.ConnectGameRequest>(ConnectGame);
+    }
+
+    private void ConnectGame(GameActorMessages.ConnectGameRequest message)
+    {
+        if (!_gameActorList.ContainsKey(message.GameId))
+        {
+            return;
+        }
+
+        _gameActorList[message.GameId].Tell(message);
     }
 
     private void GameCreated(GameActorMessages.GameCreated message)

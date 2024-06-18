@@ -78,8 +78,10 @@
             var publicVisible = string.IsNullOrEmpty(message)
                 ? null
                 : JsonConvert.DeserializeObject<PublicVisible>(message);
+
+            if (publicVisible == null) return;
             
-            Navigation.NavigateTo($"/{publicVisible?.GameTag}");
+            Navigation.NavigateTo($"/{publicVisible.GameTag}/{publicVisible.Id}");
 
             await InvokeAsync(StateHasChanged);
         });

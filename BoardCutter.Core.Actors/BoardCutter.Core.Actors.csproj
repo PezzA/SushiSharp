@@ -16,5 +16,9 @@
         <FrameworkReference Include="Microsoft.AspNetCore.App" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\BoardCutter.Core\BoardCutter.Core.csproj" />
+    </ItemGroup>
+
 
 </Project>

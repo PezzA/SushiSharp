@@ -38,15 +38,12 @@ public class GameActorValidations : TestKit
         gameActor.Tell(new GameActorMessages.CreateGameRequest(creatorPlayer, gameId));
 
         ExpectMsg<GameActorMessages.GameCreated>();
-        writerProbe.ExpectMsg<HubWriterActorMessages.AddToGroup>();
         writerProbe.ExpectMsg<HubWriterActorMessages.WriteClient>();
 
         // Adding the first guest, should be fine
         gameActor.Tell(new GameActorMessages.JoinGameRequest(guestOne, gameId));
 
         ExpectMsg<GameActorMessages.GameUpdated>();
-        writerProbe.ExpectMsg<HubWriterActorMessages.AddToGroup>();
-        writerProbe.ExpectMsg<HubWriterActorMessages.WriteGroup>();
 
         // Adding the second guest should trip the max player validation 
         gameActor.Tell(new GameActorMessages.JoinGameRequest(guestTwo, gameId));

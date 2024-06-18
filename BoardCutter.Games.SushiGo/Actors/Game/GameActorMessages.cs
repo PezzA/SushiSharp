@@ -18,6 +18,8 @@ public abstract class GameActorMessages
     public record StartGameRequest(Player Player, string GameId) : PlayerGameRequest(Player, GameId);
 
     public record JoinGameRequest(Player Player, string GameId) : PlayerGameRequest(Player, GameId);
+    
+    public record ConnectGameRequest(Player Player, string GameId) : PlayerGameRequest(Player, GameId);
 
     public record LeaveGameRequest(Player Player, string GameId) : PlayerGameRequest(Player, GameId);
 

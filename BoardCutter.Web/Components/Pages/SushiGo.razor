@@ -1,4 +1,4 @@
-﻿@page "/SushiGo"
+﻿@page "/SushiGo/{gameId}"
 @rendermode InteractiveServer
 
 @using BoardCutter.Games.SushiGo
@@ -54,6 +54,8 @@ else
 @code {
     [CascadingParameter(Name = "Cookies")] public Dictionary<string, string>? Cookies { get; set; }
 
+    [Parameter] public string GameId { get; set; }
+    
     private HubConnection? _hubConnection;
 
     // Each private here represents a separately maintainable facet of client state
@@ -144,7 +146,7 @@ else
         });
 
         await _hubConnection.StartAsync();
-        await _hubConnection.SendAsync(ClientMessage.InitClientGame);
+        await _hubConnection.SendAsync(ClientMessage.InitClientGame, GameId);
     }
 
     private async Task StartGame(string gameId)

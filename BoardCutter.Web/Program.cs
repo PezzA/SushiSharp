@@ -42,6 +42,7 @@ builder.Services.AddSingleton<IScorer, SashimiScorer>();
 builder.Services.AddSingleton<IScorer, NagiriScorer>();
 builder.Services.AddSingleton<IScorer, PuddingScorer>();
 
+builder.Services.AddSingleton<IPlayerService, MemoryPlayerService>();
 //builder.Services.AddResponseCompression(opts =>
 //{
 //    opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
@@ -63,11 +64,12 @@ builder.Services.AddAkka("MyActorSystem", configurationBuilder =>
                 { CardType.Tempura, new TempuraScorer() },
             };
 
-
             var hubWriteActor =
                 system.ActorOf(
                     Props.Create(() =>
-                        new HubClientWriterActor<LobbyHub>(resolver.GetService<IHubContext<LobbyHub>>())),
+                        new HubClientWriterActor<LobbyHub>(
+                            resolver.GetService<IHubContext<LobbyHub>>(),
+                            resolver.GetService<IPlayerService>())),
                     "LobbyHubWrite");
 
             var gameActors = new Dictionary<string, Props>
@@ -112,7 +114,6 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 builder.Services.AddSingleton<IChatService, MemoryChatService>();
-builder.Services.AddSingleton<IPlayerService, MemoryPlayerService>();
 builder.Services.AddSingleton<ICardShuffler, RandomCardShuffler>();
 
 builder.Services.AddMudServices();

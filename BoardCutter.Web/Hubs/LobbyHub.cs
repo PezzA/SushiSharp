@@ -1,6 +1,5 @@
 ﻿using Akka.Actor;
 using Akka.Hosting;
-
 using BoardCutter.Core.Players;
 using BoardCutter.Core.Web.Shared.Chat;
 using BoardCutter.Games.SushiGo;
@@ -100,15 +99,16 @@ public class LobbyHub(IRequiredActor<GameManagerActor> gameManagerActor, IPlayer
         
         
         _gameManagerActor.Tell(new GameActorMessages.GamePlayRequest(player, gameId, cards));
-        
     }
-    public Task LeaveGame(string gameId) => GenericPlayerGameRequest<GameActorMessages.LeaveGameRequest>(gameId);
     
+    public Task LeaveGame(string gameId) => GenericPlayerGameRequest<GameActorMessages.LeaveGameRequest>(gameId);
+   
     public Task StartGame(string gameId) => GenericPlayerGameRequest<GameActorMessages.StartGameRequest>(gameId);
     
     public Task JoinGame(string gameId) => GenericPlayerGameRequest<GameActorMessages.JoinGameRequest>(gameId);
-
-    public async Task InitClientGame()
+    
+    // Someone landing on an instance of a game, should be created at this point
+    public async Task InitClientGame(string gameId)
     {
         var loggedInUserName = Context.User?.Identity?.Name;
 
@@ -119,6 +119,8 @@ public class LobbyHub(IRequiredActor<GameManagerActor> gameManagerActor, IPlayer
         if (player == null) throw new InvalidDataException("Could not find user");
         
         await Clients.Caller.SendAsync("SetIdentity", player.Id);
+        
+        _gameManagerActor.Tell(new GameActorMessages.ConnectGameRequest(player, gameId));
     }
     
     public async Task InitClient()
