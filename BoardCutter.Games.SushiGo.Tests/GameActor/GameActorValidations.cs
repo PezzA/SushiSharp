@@ -20,7 +20,7 @@ public class GameActorValidations : TestKit
         return new Player($"connection-{postfix}", $"user-{postfix}", $"id-{postfix}");
     }
 
-    [Fact(Skip= "Amnesty")]
+    [Fact]
     public void GameActor_DoesNotExceedMaxPlayers()
     {
         var writerProbe = CreateTestProbe();
@@ -44,19 +44,21 @@ public class GameActorValidations : TestKit
         gameActor.Tell(new GameActorMessages.JoinGameRequest(guestOne, gameId));
 
         ExpectMsg<GameActorMessages.GameUpdated>();
+        // Both clients should get public gate state
+        writerProbe.ExpectMsg<HubWriterActorMessages.WriteClientObject>();
+        writerProbe.ExpectMsg<HubWriterActorMessages.WriteClientObject>();
 
         // Adding the second guest should trip the max player validation 
         gameActor.Tell(new GameActorMessages.JoinGameRequest(guestTwo, gameId));
 
-        // after this there should be just a single error message sent back to the 
-        // originating client.
+        // Should write a message to "guestTwo" that max players has been reached
         var writeMsg = writerProbe.ExpectMsg<HubWriterActorMessages.WriteClientObject>();
-
-        writerProbe.ExpectNoMsg(_noMsgTimeout);
-        ExpectNoMsg(_noMsgTimeout);
 
         Assert.Contains("guestTwo", writeMsg.Player.ConnectionId);
         Assert.Equal(ServerMessages.ErrorMessage, writeMsg.Message);
-        Assert.Contains("Max players", writeMsg.Payload.ToString());
+        Assert.Equal(Resources.ResMaxPlayers, writeMsg.Payload.ToString());
+        
+        writerProbe.ExpectNoMsg(_noMsgTimeout);
+        ExpectNoMsg(_noMsgTimeout);
     }
 }
