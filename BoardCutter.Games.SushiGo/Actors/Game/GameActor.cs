@@ -1,6 +1,7 @@
 ﻿using Akka.Actor;
 
 using BoardCutter.Core.Actors.HubWriter;
+using BoardCutter.Core.Exceptions;
 using BoardCutter.Games.SushiGo.Decks;
 using BoardCutter.Games.SushiGo.Models;
 using BoardCutter.Core.Players;
@@ -14,6 +15,8 @@ namespace BoardCutter.Games.SushiGo.Actors.Game;
 /// </summary>
 public class GameActor : ReceiveActor
 {
+    private const int MinAbsolutePlayers = 2;
+    
     // Dependencies
     private readonly ICardShuffler _cardShuffler;
     private readonly Dictionary<CardType, IScorer> _scorers;
@@ -131,13 +134,13 @@ public class GameActor : ReceiveActor
         if (playerIndex == -1)
 
         {
-            SendError(message.Player, "You are not a member of the game you just tried to leave?");
+            SendError(message.Player, Resources.ResValidationNotMemberOfTheGame);
             return;
         }
 
         if (_status == GameStatus.Running)
         {
-            SendError(message.Player, "You cannot leave a game that is running.");
+            SendError(message.Player, Resources.ResValidationCannotLeaveRunningGame);
             return;
         }
 
@@ -202,7 +205,7 @@ public class GameActor : ReceiveActor
 
     private bool AllCardsPlayed()
     {
-        if (_creator == null) throw new Exception("Should not have an null creator");
+        if (_creator == null) throw new InvalidGameStateException(Resources.ResErrorNoNullCreator);
 
         return _playerBoardStates[_creator.Id].Hand.Count == 0;
     }
@@ -284,13 +287,13 @@ public class GameActor : ReceiveActor
     {
         if (!_awaitingPlay)
         {
-            SendError(message.Player, "Game is not expecting a play message.");
+            SendError(message.Player, Resources.ResErrorGameNotExpectingPlay);
             return;
         }
 
         if (message.Played == null || !message.Played.Any())
         {
-            SendError(message.Player, "Play was null or contained no cards.");
+            SendError(message.Player, Resources.ResValidationPlayWasEmpty);
             return;
         }
 
@@ -321,13 +324,13 @@ public class GameActor : ReceiveActor
     {
         if (_players.Count >= _parameters.MaxPlayers)
         {
-            SendError(message.Player, Resources.ResMaxPlayers);
+            SendError(message.Player, Resources.ResValidationMaxPlayers);
             return;
         }
 
         if (_players.Any(p => p.Id == message.Player.Id))
         {
-            SendError(message.Player, Resources.ResClientAlreadyInGame);
+            SendError(message.Player, Resources.ResValidationClientAlreadyInGame);
             return;
         }
 
@@ -340,7 +343,7 @@ public class GameActor : ReceiveActor
 
     private void DealCards()
     {
-        if (_drawPile == null) throw new InvalidOperationException("No game state or game Deck");
+        if (_drawPile == null) throw new InvalidGameStateException(Resources.ResErrorDrawPileIsNull);
 
         for (int i = 0; i < 10; i++)
         {
@@ -475,14 +478,13 @@ public class GameActor : ReceiveActor
     {
         if (message.Player.Id != _creator?.Id)
         {
-            SendError(message.Player, "Only the person who created the game can start the game.");
+            SendError(message.Player, Resources.ResValidationCreatorMustStart);
             return false;
         }
 
-        // TODO - Magic number
-        if (_players.Count < 2)
+        if (_players.Count < MinAbsolutePlayers)
         {
-            SendError(message.Player, "A game must have at least 2 players to begin.");
+            SendError(message.Player, Resources.ResValidationMinPlayers);
             return false;
         }
 
