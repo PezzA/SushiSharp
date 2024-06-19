@@ -12,7 +12,6 @@ namespace BoardCutter.Games.SushiGo.Tests.GameActor;
 [Trait("Category", "UnitTests")]
 public class GameActorValidations : TestKit
 {
-
     private readonly TimeSpan _noMsgTimeout = TimeSpan.FromMilliseconds(100);
     
     private Player GetTestPlayer(string postfix)
