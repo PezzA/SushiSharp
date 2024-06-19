@@ -56,7 +56,7 @@ public class GameActorValidations : TestKit
 
         Assert.Contains("guestTwo", writeMsg.Player.ConnectionId);
         Assert.Equal(ServerMessages.ErrorMessage, writeMsg.Message);
-        Assert.Equal(Resources.ResMaxPlayers, writeMsg.Payload.ToString());
+        Assert.Equal(Resources.ResValidationMaxPlayers, writeMsg.Payload.ToString());
         
         writerProbe.ExpectNoMsg(_noMsgTimeout);
         ExpectNoMsg(_noMsgTimeout);
