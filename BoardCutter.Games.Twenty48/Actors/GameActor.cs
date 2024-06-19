@@ -43,7 +43,6 @@ public class GameActor : ReceiveActor
             return;
         }
 
-
         (_grid, int scoreIncrement) = message.Direction switch
         {
             Direction.Up => ProcessUp(_grid),
@@ -54,7 +53,7 @@ public class GameActor : ReceiveActor
         };
 
         _score += scoreIncrement;
-        
+
         _hubWriterActor.Tell(new HubWriterActorMessages.WriteGroupObject(_gameId,
             ServerMessages.SetViewerVisibleData,
             new ViewerVisibleData() { Score = _score, Grid = _grid }));
@@ -88,6 +87,52 @@ public class GameActor : ReceiveActor
         grid[y2, x2] += grid[y1, x1];
         grid[y1, x1] = 0;
         return (grid, grid[y2, x2], true);
+    }
+
+    public static (int[], int) Shunt(int[] input)
+    {
+        var retVal = input.ToArray();
+        var merged = new bool[input.Length];
+        var scoreIncrement = 0;
+
+        // Don't need to move the furthest tile, work from right-to-left
+        for (var position = input.Length- 2; position >= 0; position--)
+        {
+            // walk the position from left-to-right
+            for (var walkIndex = position; walkIndex < input.Length-1; walkIndex++)
+            {
+                // zero can be skipped
+                if (retVal[walkIndex] == 0)
+                {
+                    break;
+                }
+
+                var targetIndex = walkIndex + 1;
+
+                // if further along index is zero, swap and carry on
+                if (retVal[targetIndex] == 0)
+                {
+                    retVal[targetIndex] = retVal[walkIndex];
+                    retVal[walkIndex] = 0;
+                    continue;
+                }
+
+                // if next is different or has been merged stop.
+                if (retVal[walkIndex] != retVal[targetIndex] || merged[targetIndex])
+                {
+                    break;
+                }
+
+                // merge
+                retVal[targetIndex] *= 2;
+                retVal[walkIndex] = 0;
+                scoreIncrement += retVal[targetIndex];
+                merged[targetIndex] = true;
+                break;
+            }
+        }
+
+        return (retVal, scoreIncrement);
     }
 
     public static (int[,], int) ProcessRight(int[,] grid)
@@ -232,7 +277,6 @@ public class GameActor : ReceiveActor
 
         _score = 0;
     }
-
 
     private static (int, int) GetXy(int value, int gridSize)
     {
