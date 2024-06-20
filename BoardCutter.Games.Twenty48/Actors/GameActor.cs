@@ -1,17 +1,17 @@
-﻿using System.Text.Json.Nodes;
-
-using Akka.Actor;
+﻿using Akka.Actor;
 
 using BoardCutter.Core.Actors.HubWriter;
 using BoardCutter.Core.Players;
 using BoardCutter.Games.SushiGo;
+
+using Grid = int[][];
 
 namespace BoardCutter.Games.Twenty48.Actors;
 
 public class ViewerVisibleData
 {
     public int Score { get; set; }
-    public int[,]? Grid { get; set; }
+    public Grid Grid { get; set; } = [];
 }
 
 public class GameActor : ReceiveActor
@@ -19,8 +19,8 @@ public class GameActor : ReceiveActor
     private readonly Player _owner;
     private readonly string _gameId;
     private int _gridSize = 4;
-    private int[,] _grid = { { } };
-    private int _score = 0;
+    private Grid _grid = [];
+    private int _score;
     private readonly IActorRef _hubWriterActor;
 
     public GameActor(Player owner, IActorRef hubWriterActor, string? gameId = null)
@@ -45,10 +45,10 @@ public class GameActor : ReceiveActor
 
         (_grid, int scoreIncrement) = message.Direction switch
         {
-            Direction.Up => ProcessUp(_grid),
-            Direction.Down => ProcessDown(_grid),
-            Direction.Left => ProcessLeft(_grid),
-            Direction.Right => ProcessRight(_grid),
+            Direction.Up => ShuntUp(_grid),
+            Direction.Down => ShuntDown(_grid),
+            Direction.Left => ShuntLeft(_grid),
+            Direction.Right => ShuntRight(_grid),
             _ => throw new ArgumentOutOfRangeException(nameof(message))
         };
 
@@ -59,36 +59,6 @@ public class GameActor : ReceiveActor
             new ViewerVisibleData() { Score = _score, Grid = _grid }));
     }
 
-    private static (int[,], int, bool) ProcessUpdate(int[,] grid, int x1, int y1, int x2, int y2)
-    {
-        // exit if source is zero
-        if (grid[y1, x1] == 0) return (grid, 0, false);
-
-        int tmpX = x2;
-        int tmpY = y2;
-
-        while (grid[tmpY, tmpX] == 0)
-        {
-            grid[y2, x2] += grid[y1, x1];
-            grid[y1, x1] = 0;
-        }
-
-        // if target is zero, shunt and set source to zero
-        if (grid[y2, x2] == 0)
-        {
-            grid[y2, x2] += grid[y1, x1];
-            grid[y1, x1] = 0;
-        }
-
-        // if they are different do nothing
-        if (grid[y1, x1] != grid[y2, x2]) return (grid, 0, false);
-
-        // Merge!
-        grid[y2, x2] += grid[y1, x1];
-        grid[y1, x1] = 0;
-        return (grid, grid[y2, x2], true);
-    }
-
     public static (int[], int) Shunt(int[] input)
     {
         var retVal = input.ToArray();
@@ -96,10 +66,10 @@ public class GameActor : ReceiveActor
         var scoreIncrement = 0;
 
         // Don't need to move the furthest tile, work from right-to-left
-        for (var position = input.Length- 2; position >= 0; position--)
+        for (var position = input.Length - 2; position >= 0; position--)
         {
             // walk the position from left-to-right
-            for (var walkIndex = position; walkIndex < input.Length-1; walkIndex++)
+            for (var walkIndex = position; walkIndex < input.Length - 1; walkIndex++)
             {
                 // zero can be skipped
                 if (retVal[walkIndex] == 0)
@@ -135,128 +105,111 @@ public class GameActor : ReceiveActor
         return (retVal, scoreIncrement);
     }
 
-    public static (int[,], int) ProcessRight(int[,] grid)
+    public static (Grid, int) ShuntRight(Grid grid)
     {
-        var gridSize = grid.GetLength(0);
-        var scoreIncrement = 0;
+        int increment = 0;
 
-        var didUpdate = true;
-
-        while (didUpdate)
+        for (int i = 0; i < grid.Length; i++)
         {
-            didUpdate = false;
-            for (int x = gridSize - 2; x >= 0; x--)
-            {
-                for (int y = 0; y < gridSize; y++)
-                {
-                    (grid, int localIncrement, bool updated) = ProcessUpdate(grid, x, y, x + 1, y);
+            (int[] shunt, int inc) = Shunt(grid[i]);
 
-                    scoreIncrement += localIncrement;
-
-                    if (updated)
-                    {
-                        didUpdate = true;
-                    }
-                }
-            }
+            grid[i] = shunt;
+            increment += inc;
         }
 
-        return (grid, scoreIncrement);
+        return (grid, increment);
     }
 
-    public static (int[,], int) ProcessLeft(int[,] grid)
+    public static (Grid, int) ShuntLeft(Grid grid)
     {
-        var gridSize = grid.GetLength(0);
-        var scoreIncrement = 0;
+        int increment = 0;
 
-        var didUpdate = true;
-
-        while (didUpdate)
+        for (int i = 0; i < grid.Length; i++)
         {
-            didUpdate = false;
+            (int[] shunt, int inc) = Shunt(grid[i].Reverse().ToArray());
 
-            for (int x = 1; x <= gridSize - 1; x++)
-            {
-                for (int y = 0; y < gridSize; y++)
-                {
-                    (grid, int localIncrement, bool updated) = ProcessUpdate(grid, x, y, x - 1, y);
-
-                    scoreIncrement += localIncrement;
-
-                    if (updated)
-                    {
-                        didUpdate = true;
-                    }
-                }
-            }
+            grid[i] = shunt.Reverse().ToArray();
+            increment += inc;
         }
 
-        return (grid, scoreIncrement);
+        return (grid, increment);
     }
 
-    public static (int[,], int) ProcessUp(int[,] grid)
+    private static int[] GetColumnAsArray(Grid grid, int colIndex)
     {
-        var gridSize = grid.GetLength(0);
-        var scoreIncrement = 0;
+        int[] retVal = new int[grid.Length];
 
-        var didUpdate = true;
-
-        while (didUpdate)
+        for (int i = 0; i < grid.Length; i++)
         {
-            didUpdate = false;
-
-            for (int x = 0; x < gridSize; x++)
-            {
-                for (int y = 1; y <= gridSize - 1; y++)
-                {
-                    (grid, int localIncrement, bool updated) = ProcessUpdate(grid, x, y, x, y - 1);
-
-                    scoreIncrement += localIncrement;
-
-                    if (updated)
-                    {
-                        didUpdate = true;
-                    }
-                }
-            }
+            retVal[i] = grid[i][colIndex];
         }
 
-        return (grid, scoreIncrement);
+        return retVal;
     }
 
-    public static (int[,], int) ProcessDown(int[,] grid)
+    private static Grid MapColumnToGrid(Grid grid, int[] col, int colIndex)
     {
-        var gridSize = grid.GetLength(0);
-        var scoreIncrement = 0;
-
-        var didUpdate = true;
-
-        while (didUpdate)
+        for (int i = 0; i < col.Length; i++)
         {
-            didUpdate = false;
-
-            for (int x = 0; x < gridSize; x++)
-            {
-                for (int y = gridSize - 2; y >= 0; y--)
-                {
-                    (grid, int localIncrement, bool updated) = ProcessUpdate(grid, x, y, x, y + 1);
-
-                    scoreIncrement += localIncrement;
-
-                    if (updated)
-                    {
-                        didUpdate = true;
-                    }
-                }
-            }
+            grid[i][colIndex] = col[i];
         }
 
-        return (grid, scoreIncrement);
+        return grid;
+    }
+
+    public static (Grid, int) ShuntUp(Grid grid)
+    {
+        int increment = 0;
+
+        for (var colIndex = 0; colIndex < grid[0].Length; colIndex++)
+        {
+            var colArray = GetColumnAsArray(grid, colIndex).Reverse().ToArray();
+
+            (int[] shuntedArray, int scoreIncrement) = Shunt(colArray);
+
+            increment += scoreIncrement;
+
+            grid = MapColumnToGrid(grid, shuntedArray.Reverse().ToArray(), colIndex);
+
+        }
+        
+        return (grid, increment);
+    }
+    
+    public static (Grid, int) ShuntDown(Grid grid)
+    {
+        int increment = 0;
+
+        for (var colIndex = 0; colIndex < grid[0].Length; colIndex++)
+        {
+            var colArray = GetColumnAsArray(grid, colIndex);
+
+            (int[] shuntedArray, int scoreIncrement) = Shunt(colArray);
+
+            increment += scoreIncrement;
+
+            grid = MapColumnToGrid(grid, shuntedArray, colIndex);
+
+        }
+        
+        return (grid, increment);
+    }
+
+    private Grid NewGrid(int size)
+    {
+        var list = new List<int[]>();
+
+        for (int i = 0; i < size; i++)
+        {
+            list.Add(new int[size]);
+        }
+
+        return list.ToArray();
     }
 
     private void StartGameRequest(GameActorMessages.StartGameRequest message)
     {
-        _grid = new int[_gridSize, _gridSize];
+        _grid = NewGrid(_gridSize);
 
         var rand = new Random();
         var cellCount = _gridSize * 2;
@@ -272,8 +225,8 @@ public class GameActor : ReceiveActor
         (int y1, int x1) = GetXy(rand1, _gridSize);
         (int y2, int x2) = GetXy(rand2, _gridSize);
 
-        _grid[y1, x1] = 2;
-        _grid[y2, x2] = 2;
+        _grid[y1][x1] = 2;
+        _grid[y2][x2] = 2;
 
         _score = 0;
     }
