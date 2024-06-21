@@ -2,17 +2,12 @@
 
 using BoardCutter.Core.Actors.HubWriter;
 using BoardCutter.Core.Players;
-using BoardCutter.Games.SushiGo;
 
 using Grid = int[][];
 
 namespace BoardCutter.Games.Twenty48.Actors;
 
-public class ViewerVisibleData
-{
-    public int Score { get; set; }
-    public Grid Grid { get; set; } = [];
-}
+public record PublicVisible(string GameId, int Score, Grid Grid);
 
 public class GameActor : ReceiveActor
 {
@@ -22,12 +17,15 @@ public class GameActor : ReceiveActor
     private Grid _grid = [];
     private int _score;
     private readonly IActorRef _hubWriterActor;
+    private readonly ITilePlacer _tilePlacer;
 
-    public GameActor(Player owner, IActorRef hubWriterActor, string? gameId = null)
+    public GameActor(Player owner, IActorRef hubWriterActor, ITilePlacer tilePlacer, string? gameId = null)
     {
         _owner = owner;
         _hubWriterActor = hubWriterActor;
+        _tilePlacer = tilePlacer;
         _gameId = gameId ?? Guid.NewGuid().ToString();
+        _tilePlacer = tilePlacer;
 
         Receive<GameActorMessages.SetupGameRequest>(SetupRequest);
         Receive<GameActorMessages.CreateGameRequest>(CreateGameRequest);
@@ -54,9 +52,7 @@ public class GameActor : ReceiveActor
 
         _score += scoreIncrement;
 
-        _hubWriterActor.Tell(new HubWriterActorMessages.WriteGroupObject(_gameId,
-            ServerMessages.SetViewerVisibleData,
-            new ViewerVisibleData() { Score = _score, Grid = _grid }));
+        BroadCastVisible();
     }
 
     public static (int[], int) Shunt(int[] input)
@@ -135,6 +131,43 @@ public class GameActor : ReceiveActor
         return (grid, increment);
     }
 
+
+    public static (Grid, int) ShuntUp(Grid grid)
+    {
+        int increment = 0;
+
+        for (var colIndex = 0; colIndex < grid[0].Length; colIndex++)
+        {
+            var colArray = GetColumnAsArray(grid, colIndex).Reverse().ToArray();
+
+            (int[] shuntedArray, int scoreIncrement) = Shunt(colArray);
+
+            increment += scoreIncrement;
+
+            grid = MapColumnToGrid(grid, shuntedArray.Reverse().ToArray(), colIndex);
+        }
+
+        return (grid, increment);
+    }
+
+    public static (Grid, int) ShuntDown(Grid grid)
+    {
+        int increment = 0;
+
+        for (var colIndex = 0; colIndex < grid[0].Length; colIndex++)
+        {
+            var colArray = GetColumnAsArray(grid, colIndex);
+
+            (int[] shuntedArray, int scoreIncrement) = Shunt(colArray);
+
+            increment += scoreIncrement;
+
+            grid = MapColumnToGrid(grid, shuntedArray, colIndex);
+        }
+
+        return (grid, increment);
+    }
+
     private static int[] GetColumnAsArray(Grid grid, int colIndex)
     {
         int[] retVal = new int[grid.Length];
@@ -157,44 +190,6 @@ public class GameActor : ReceiveActor
         return grid;
     }
 
-    public static (Grid, int) ShuntUp(Grid grid)
-    {
-        int increment = 0;
-
-        for (var colIndex = 0; colIndex < grid[0].Length; colIndex++)
-        {
-            var colArray = GetColumnAsArray(grid, colIndex).Reverse().ToArray();
-
-            (int[] shuntedArray, int scoreIncrement) = Shunt(colArray);
-
-            increment += scoreIncrement;
-
-            grid = MapColumnToGrid(grid, shuntedArray.Reverse().ToArray(), colIndex);
-
-        }
-        
-        return (grid, increment);
-    }
-    
-    public static (Grid, int) ShuntDown(Grid grid)
-    {
-        int increment = 0;
-
-        for (var colIndex = 0; colIndex < grid[0].Length; colIndex++)
-        {
-            var colArray = GetColumnAsArray(grid, colIndex);
-
-            (int[] shuntedArray, int scoreIncrement) = Shunt(colArray);
-
-            increment += scoreIncrement;
-
-            grid = MapColumnToGrid(grid, shuntedArray, colIndex);
-
-        }
-        
-        return (grid, increment);
-    }
-
     private Grid NewGrid(int size)
     {
         var list = new List<int[]>();
@@ -207,37 +202,34 @@ public class GameActor : ReceiveActor
         return list.ToArray();
     }
 
+    private Grid PlaceNextTile(Grid input)
+    {
+        (int x, int y, int value) = _tilePlacer.PlaceTile(input);
+        input[y][x] = value;
+        return input;
+    }
+
     private void StartGameRequest(GameActorMessages.StartGameRequest message)
     {
         _grid = NewGrid(_gridSize);
 
-        var rand = new Random();
-        var cellCount = _gridSize * 2;
-
-        var rand1 = rand.Next(cellCount);
-        var rand2 = rand.Next(cellCount);
-
-        while (rand1 == rand2)
-        {
-            rand2 = rand.Next(cellCount);
-        }
-
-        (int y1, int x1) = GetXy(rand1, _gridSize);
-        (int y2, int x2) = GetXy(rand2, _gridSize);
-
-        _grid[y1][x1] = 2;
-        _grid[y2][x2] = 2;
+        _grid = PlaceNextTile(_grid);
+        _grid = PlaceNextTile(_grid);
 
         _score = 0;
+
+        BroadCastVisible();
     }
 
-    private static (int, int) GetXy(int value, int gridSize)
-    {
-        return (value / gridSize, value % gridSize);
-    }
+    private PublicVisible GetPublicVisibleData() => new(_gameId, _score, _grid);
+
+    private void BroadCastVisible() => _hubWriterActor.Tell(new HubWriterActorMessages.WriteClientObject(_owner,
+        Server2048Messages.PublicVisible.ToString(),
+        GetPublicVisibleData()));
 
     private void CreateGameRequest(GameActorMessages.CreateGameRequest message)
     {
+        Sender.Tell(new GameActorMessages.GameCreated(GetPublicVisibleData()));
     }
 
     private void SetupRequest(GameActorMessages.SetupGameRequest message)

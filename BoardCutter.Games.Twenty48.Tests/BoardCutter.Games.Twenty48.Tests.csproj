@@ -10,6 +10,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Akka.TestKit.Xunit2" Version="1.5.18" />
         <PackageReference Include="coverlet.collector" Version="6.0.0"/>
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0"/>
         <PackageReference Include="xunit" Version="2.5.3"/>
@@ -21,6 +22,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\BoardCutter.Core.Tests\BoardCutter.Core.Tests.csproj" />
       <ProjectReference Include="..\BoardCutter.Games.Twenty48\BoardCutter.Games.Twenty48.csproj" />
     </ItemGroup>
 

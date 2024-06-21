@@ -2,10 +2,10 @@ using Akka.Actor;
 using Akka.TestKit.Xunit2;
 
 using BoardCutter.Core.Actors.HubWriter;
-using BoardCutter.Core.Players;
 using BoardCutter.Games.SushiGo.Actors.Game;
 using BoardCutter.Games.SushiGo.Scoring;
 using BoardCutter.Games.SushiGo.Shufflers;
+using static BoardCutter.Core.Tests.TestDataSetup;
 
 namespace BoardCutter.Games.SushiGo.Tests.GameActor;
 
@@ -14,11 +14,6 @@ public class GameActorValidations : TestKit
 {
     private readonly TimeSpan _noMsgTimeout = TimeSpan.FromMilliseconds(100);
     
-    private Player GetTestPlayer(string postfix)
-    {
-        return new Player($"connection-{postfix}", $"user-{postfix}", $"id-{postfix}");
-    }
-
     [Fact]
     public void GameActor_DoesNotExceedMaxPlayers()
     {
@@ -36,7 +31,8 @@ public class GameActorValidations : TestKit
 
         gameActor.Tell(new GameActorMessages.CreateGameRequest(creatorPlayer, gameId));
 
-        ExpectMsg<GameActorMessages.GameCreated>();
+        var msg = ExpectMsg<GameActorMessages.GameCreated>();
+        
         writerProbe.ExpectMsg<HubWriterActorMessages.WriteClientObject>();
 
         // Adding the first guest, should be fine
