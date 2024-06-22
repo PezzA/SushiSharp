@@ -1,6 +1,7 @@
 ﻿using Akka.Actor;
 using Akka.TestKit.Xunit2;
 
+using BoardCutter.Core;
 using BoardCutter.Core.Actors.HubWriter;
 using BoardCutter.Games.Twenty48.Actors;
 
@@ -22,24 +23,31 @@ public class GameActorValidations : TestKit
 
         var gameId = "TestGameId";
 
-        var gameActorProps = Props.Create(() =>
-            new GameActor(creatorPlayer, writerProbe, new PredictableTilePlacer(),
-                gameId));
+        var gameActorProps = Props.Create(
+            () => new GameActor(creatorPlayer, writerProbe, new PredictableTilePlacer(), gameId));
 
         var gameActor = Sys.ActorOf(gameActorProps, "gameActor");
 
-        var response =
-            await gameActor.Ask(
-                new GameActorMessages.CreateGameRequest(creatorPlayer)) as GameActorMessages.GameCreated;
+        
+        // Game Setup
+        gameActor.Tell(new GameMessages.SetupGameRequest(creatorPlayer, 4));
 
-        Assert.NotNull(response);
-        Assert.Equal(gameId, response.GameData.GameId);
-        Assert.Equal(0, response.GameData.Score);
-        Assert.Equal([], response.GameData.Grid);
+        var setupMsg = writerProbe.ExpectMsg<HubWriterActorMessages.WriteClientObject>();
+        
+        Assert.IsType<PublicVisible>(setupMsg.Payload);
 
-        gameActor.Tell(new GameActorMessages.StartGameRequest(creatorPlayer));
+        var unwrappedSetupMsg = setupMsg.Payload as PublicVisible;
 
+        Assert.NotNull(unwrappedSetupMsg);
+        Assert.Equal(GameStatus.SettingUp, unwrappedSetupMsg.Status);
+        Assert.Equal(gameId, unwrappedSetupMsg.GameId);
+        Assert.Equal(0, unwrappedSetupMsg.Score);
+        Assert.Equal([], unwrappedSetupMsg.Grid);
 
+        
+        // Start Game
+        gameActor.Tell(new GameMessages.StartGameRequest(creatorPlayer));
+        
         var msg = writerProbe.ExpectMsg<HubWriterActorMessages.WriteClientObject>();
 
         Assert.IsType<PublicVisible>(msg.Payload);
@@ -47,13 +55,17 @@ public class GameActorValidations : TestKit
         var unwrappedMsg = msg.Payload as PublicVisible;
 
         Assert.NotNull(unwrappedMsg);
-
+        Assert.Equal(GameStatus.Running, unwrappedMsg.Status);
         Assert.Equal(gameId, unwrappedMsg.GameId);
         Assert.Equal(0, unwrappedMsg.Score);
         Assert.Equal(new int[][] { [2, 2, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0] }, unwrappedMsg.Grid);
         
-        gameActor.Tell(new GameActorMessages.MoveRequest(creatorPlayer, Direction.Right));
+        var startNotification = ExpectMsg<GameNotifications.GameUpdated>();
+        Assert.Equal(GameStatus.Running, startNotification.GameData.Status);
         
+        // Make a move
+        gameActor.Tell(new GameMessages.MoveRequest(creatorPlayer, Direction.Right));
+
         var msg2 = writerProbe.ExpectMsg<HubWriterActorMessages.WriteClientObject>();
 
         Assert.IsType<PublicVisible>(msg2.Payload);
@@ -65,11 +77,10 @@ public class GameActorValidations : TestKit
         Assert.Equal(gameId, unwrappedMsg2.GameId);
         Assert.Equal(4, unwrappedMsg2.Score);
         Assert.Equal(new int[][] { [2, 0, 0, 4], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0] }, unwrappedMsg2.Grid);
-        await writerProbe.ExpectNoMsgAsync(_noMsgTimeout);
-        await ExpectNoMsgAsync(_noMsgTimeout);
-        
-        gameActor.Tell(new GameActorMessages.MoveRequest(creatorPlayer, Direction.Down));
-        
+
+        // Make another move
+        gameActor.Tell(new GameMessages.MoveRequest(creatorPlayer, Direction.Down));
+
         var msg3 = writerProbe.ExpectMsg<HubWriterActorMessages.WriteClientObject>();
 
         Assert.IsType<PublicVisible>(msg3.Payload);
@@ -81,8 +92,8 @@ public class GameActorValidations : TestKit
         Assert.Equal(gameId, unwrappedMsg3.GameId);
         Assert.Equal(4, unwrappedMsg3.Score);
         Assert.Equal(new int[][] { [2, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [2, 0, 0, 4] }, unwrappedMsg3.Grid);
-        
-        
+
+        // Finish
         await writerProbe.ExpectNoMsgAsync(_noMsgTimeout);
         await ExpectNoMsgAsync(_noMsgTimeout);
     }

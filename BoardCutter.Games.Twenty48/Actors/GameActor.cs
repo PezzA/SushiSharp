@@ -30,22 +30,16 @@ public class GameActor : ReceiveActor
         _gameId = gameId ?? Guid.NewGuid().ToString();
         _tilePlacer = tilePlacer;
 
-        Receive<GameActorMessages.SetupGameRequest>(SetupRequest);
-        Receive<GameActorMessages.CreateGameRequest>(CreateGameRequest);
-        Receive<GameActorMessages.StartGameRequest>(StartGameRequest);
-        Receive<GameActorMessages.MoveRequest>(MoveRequest);
+        Receive<GameMessages.SetupGameRequest>(SetupRequest);
+        Receive<GameMessages.StartGameRequest>(StartGameRequest);
+        Receive<GameMessages.MoveRequest>(MoveRequest);
     }
-
-    private void CreateGameRequest(GameActorMessages.CreateGameRequest message)
-    {
-        Sender.Tell(new GameActorMessages.GameCreated(GetPublicVisibleData()));
-    }
-
-    private void SetupRequest(GameActorMessages.SetupGameRequest message)
+    
+    private void SetupRequest(GameMessages.SetupGameRequest message)
     {
         if (message.Player.Id != _owner.Id)
         {
-            // TODO - only the game owner can change 
+            _hubWriterActor.Tell(new HubWriterActorMessages.WriteClientObject(message.Player, "Error" ,"Only the game creator can setup game properties"));
             return;
         }
 
@@ -54,7 +48,21 @@ public class GameActor : ReceiveActor
         BroadCastVisible();
     }
 
-    private void MoveRequest(GameActorMessages.MoveRequest message)
+    private void StartGameRequest(GameMessages.StartGameRequest message)
+    {
+        _grid = NewGrid(_gridSize);
+
+        _grid = PlaceNextTile(_grid);
+        _grid = PlaceNextTile(_grid);
+
+        _score = 0;
+
+        SetGameStatus(GameStatus.Running);
+        BroadCastVisible();
+    }
+
+
+    private void MoveRequest(GameMessages.MoveRequest message)
     {
         if (message.Player.Id != _owner.Id)
         {
@@ -94,7 +102,8 @@ public class GameActor : ReceiveActor
     private void SetGameStatus(GameStatus status)
     {
         _gameStatus = status;
-        Sender.Tell(new GameActorMessages.GameCreated(GetPublicVisibleData()));
+        
+        Sender.Tell(new GameNotifications.GameUpdated(GetPublicVisibleData()));
     }
 
     public static bool IsGameOver(Grid grid)
@@ -294,18 +303,6 @@ public class GameActor : ReceiveActor
         return input;
     }
 
-    private void StartGameRequest(GameActorMessages.StartGameRequest message)
-    {
-        _grid = NewGrid(_gridSize);
-
-        _grid = PlaceNextTile(_grid);
-        _grid = PlaceNextTile(_grid);
-
-        _score = 0;
-
-        SetGameStatus(GameStatus.Running);
-        BroadCastVisible();
-    }
 
     private PublicVisible GetPublicVisibleData() => new(_gameId, _score, _grid, _gameStatus);
 
