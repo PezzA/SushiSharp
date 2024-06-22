@@ -2,21 +2,28 @@
 
 namespace BoardCutter.Games.Twenty48.Actors;
 
-public class GameActorMessages
+public class GameMessages
 {
-    public abstract record SetupGameRequest(Player Player, int GridSize);
+    // Setup game properties prior to stating
+    public record SetupGameRequest(Player Player, int GridSize);
 
-    public abstract record CreateGameRequest(Player Player);
+    // Start the game off!
+    public record StartGameRequest(Player Player);
 
-    public abstract record StartGameRequest(Player Player);
+    // Log a move
+    public record MoveRequest(Player Player, Direction Direction);
 
-    public abstract record MoveRequest(Player Player, Direction Direction);
+}
+
+public class GameNotifications
+{
+    public record GameUpdated(PublicVisible GameData);
 }
 
 public enum Direction
 {
     Up,
     Down,
-    Left, 
+    Left,
     Right
 }

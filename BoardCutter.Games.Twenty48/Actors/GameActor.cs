@@ -1,18 +1,14 @@
 ﻿using Akka.Actor;
 
+using BoardCutter.Core;
 using BoardCutter.Core.Actors.HubWriter;
 using BoardCutter.Core.Players;
-using BoardCutter.Games.SushiGo;
 
 using Grid = int[][];
 
 namespace BoardCutter.Games.Twenty48.Actors;
 
-public class ViewerVisibleData
-{
-    public int Score { get; set; }
-    public Grid Grid { get; set; } = [];
-}
+public record PublicVisible(string GameId, int Score, Grid Grid, GameStatus Status);
 
 public class GameActor : ReceiveActor
 {
@@ -21,25 +17,62 @@ public class GameActor : ReceiveActor
     private int _gridSize = 4;
     private Grid _grid = [];
     private int _score;
+    private bool _isGameOver;
     private readonly IActorRef _hubWriterActor;
+    private readonly ITilePlacer _tilePlacer;
+    private GameStatus _gameStatus = GameStatus.SettingUp;
 
-    public GameActor(Player owner, IActorRef hubWriterActor, string? gameId = null)
+    public GameActor(Player owner, IActorRef hubWriterActor, ITilePlacer tilePlacer, string? gameId = null)
     {
         _owner = owner;
         _hubWriterActor = hubWriterActor;
+        _tilePlacer = tilePlacer;
         _gameId = gameId ?? Guid.NewGuid().ToString();
+        _tilePlacer = tilePlacer;
 
-        Receive<GameActorMessages.SetupGameRequest>(SetupRequest);
-        Receive<GameActorMessages.CreateGameRequest>(CreateGameRequest);
-        Receive<GameActorMessages.StartGameRequest>(StartGameRequest);
-        Receive<GameActorMessages.MoveRequest>(MoveRequest);
+        Receive<GameMessages.SetupGameRequest>(SetupRequest);
+        Receive<GameMessages.StartGameRequest>(StartGameRequest);
+        Receive<GameMessages.MoveRequest>(MoveRequest);
+    }
+    
+    private void SetupRequest(GameMessages.SetupGameRequest message)
+    {
+        if (message.Player.Id != _owner.Id)
+        {
+            _hubWriterActor.Tell(new HubWriterActorMessages.WriteClientObject(message.Player, "Error" ,"Only the game creator can setup game properties"));
+            return;
+        }
+
+        _gridSize = message.GridSize;
+
+        BroadCastVisible();
     }
 
-    private void MoveRequest(GameActorMessages.MoveRequest message)
+    private void StartGameRequest(GameMessages.StartGameRequest message)
+    {
+        _grid = NewGrid(_gridSize);
+
+        _grid = PlaceNextTile(_grid);
+        _grid = PlaceNextTile(_grid);
+
+        _score = 0;
+
+        SetGameStatus(GameStatus.Running);
+        BroadCastVisible();
+    }
+
+
+    private void MoveRequest(GameMessages.MoveRequest message)
     {
         if (message.Player.Id != _owner.Id)
         {
             // TODO - only game owner can make a move. 
+            return;
+        }
+
+        if (_isGameOver)
+        {
+            // TODO - Probably log a warning, but other than that, do nothing
             return;
         }
 
@@ -54,9 +87,66 @@ public class GameActor : ReceiveActor
 
         _score += scoreIncrement;
 
-        _hubWriterActor.Tell(new HubWriterActorMessages.WriteGroupObject(_gameId,
-            ServerMessages.SetViewerVisibleData,
-            new ViewerVisibleData() { Score = _score, Grid = _grid }));
+        _grid = PlaceNextTile(_grid);
+
+        _isGameOver = IsGameOver(_grid);
+
+        if (_isGameOver)
+        {
+            SetGameStatus(GameStatus.Complete);
+        }
+
+        BroadCastVisible();
+    }
+
+    private void SetGameStatus(GameStatus status)
+    {
+        _gameStatus = status;
+        
+        Sender.Tell(new GameNotifications.GameUpdated(GetPublicVisibleData()));
+    }
+
+    public static bool IsGameOver(Grid grid)
+    {
+        for (int y = 0; y < grid.Length; y++)
+        {
+            for (int x = 0; x < grid[y].Length; x++)
+            {
+                var cell = grid[y][x];
+                if (cell == 0)
+                {
+                    return false;
+                }
+
+                // Are there any adjacent cells of the same value?
+
+                // up
+                if (y > 0 && grid[y - 1][x] == cell)
+                {
+                    return false;
+                }
+
+                // down
+                if (y < grid.Length - 1 && grid[y + 1][x] == cell)
+                {
+                    return false;
+                }
+
+                // left
+                if (x > 0 && grid[y][x - 1] == cell)
+                {
+                    return false;
+                }
+
+                // right
+                if (x < grid[y].Length - 1 && grid[y][x + 1] == cell)
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     public static (int[], int) Shunt(int[] input)
@@ -135,6 +225,43 @@ public class GameActor : ReceiveActor
         return (grid, increment);
     }
 
+
+    public static (Grid, int) ShuntUp(Grid grid)
+    {
+        int increment = 0;
+
+        for (var colIndex = 0; colIndex < grid[0].Length; colIndex++)
+        {
+            var colArray = GetColumnAsArray(grid, colIndex).Reverse().ToArray();
+
+            (int[] shuntedArray, int scoreIncrement) = Shunt(colArray);
+
+            increment += scoreIncrement;
+
+            grid = MapColumnToGrid(grid, shuntedArray.Reverse().ToArray(), colIndex);
+        }
+
+        return (grid, increment);
+    }
+
+    public static (Grid, int) ShuntDown(Grid grid)
+    {
+        int increment = 0;
+
+        for (var colIndex = 0; colIndex < grid[0].Length; colIndex++)
+        {
+            var colArray = GetColumnAsArray(grid, colIndex);
+
+            (int[] shuntedArray, int scoreIncrement) = Shunt(colArray);
+
+            increment += scoreIncrement;
+
+            grid = MapColumnToGrid(grid, shuntedArray, colIndex);
+        }
+
+        return (grid, increment);
+    }
+
     private static int[] GetColumnAsArray(Grid grid, int colIndex)
     {
         int[] retVal = new int[grid.Length];
@@ -157,44 +284,6 @@ public class GameActor : ReceiveActor
         return grid;
     }
 
-    public static (Grid, int) ShuntUp(Grid grid)
-    {
-        int increment = 0;
-
-        for (var colIndex = 0; colIndex < grid[0].Length; colIndex++)
-        {
-            var colArray = GetColumnAsArray(grid, colIndex).Reverse().ToArray();
-
-            (int[] shuntedArray, int scoreIncrement) = Shunt(colArray);
-
-            increment += scoreIncrement;
-
-            grid = MapColumnToGrid(grid, shuntedArray.Reverse().ToArray(), colIndex);
-
-        }
-        
-        return (grid, increment);
-    }
-    
-    public static (Grid, int) ShuntDown(Grid grid)
-    {
-        int increment = 0;
-
-        for (var colIndex = 0; colIndex < grid[0].Length; colIndex++)
-        {
-            var colArray = GetColumnAsArray(grid, colIndex);
-
-            (int[] shuntedArray, int scoreIncrement) = Shunt(colArray);
-
-            increment += scoreIncrement;
-
-            grid = MapColumnToGrid(grid, shuntedArray, colIndex);
-
-        }
-        
-        return (grid, increment);
-    }
-
     private Grid NewGrid(int size)
     {
         var list = new List<int[]>();
@@ -207,47 +296,17 @@ public class GameActor : ReceiveActor
         return list.ToArray();
     }
 
-    private void StartGameRequest(GameActorMessages.StartGameRequest message)
+    private Grid PlaceNextTile(Grid input)
     {
-        _grid = NewGrid(_gridSize);
-
-        var rand = new Random();
-        var cellCount = _gridSize * 2;
-
-        var rand1 = rand.Next(cellCount);
-        var rand2 = rand.Next(cellCount);
-
-        while (rand1 == rand2)
-        {
-            rand2 = rand.Next(cellCount);
-        }
-
-        (int y1, int x1) = GetXy(rand1, _gridSize);
-        (int y2, int x2) = GetXy(rand2, _gridSize);
-
-        _grid[y1][x1] = 2;
-        _grid[y2][x2] = 2;
-
-        _score = 0;
+        (int x, int y, int value) = _tilePlacer.PlaceTile(input);
+        input[y][x] = value;
+        return input;
     }
 
-    private static (int, int) GetXy(int value, int gridSize)
-    {
-        return (value / gridSize, value % gridSize);
-    }
 
-    private void CreateGameRequest(GameActorMessages.CreateGameRequest message)
-    {
-    }
+    private PublicVisible GetPublicVisibleData() => new(_gameId, _score, _grid, _gameStatus);
 
-    private void SetupRequest(GameActorMessages.SetupGameRequest message)
-    {
-        if (message.Player.Id != _owner.Id)
-        {
-            // TODO - only the game owner can change 
-            return;
-        }
-
-        _gridSize = message.GridSize;
-    }
+    private void BroadCastVisible() => _hubWriterActor.Tell(new HubWriterActorMessages.WriteClientObject(_owner,
+        Server2048Messages.PublicVisible.ToString(),
+        GetPublicVisibleData()));
 }

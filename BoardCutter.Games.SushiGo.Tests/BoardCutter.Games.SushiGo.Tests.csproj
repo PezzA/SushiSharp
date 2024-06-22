@@ -26,6 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\BoardCutter.Core.Tests\BoardCutter.Core.Tests.csproj" />
     <ProjectReference Include="..\BoardCutter.Games.SushiGo\BoardCutter.Games.SushiGo.csproj" />
   </ItemGroup>
 
