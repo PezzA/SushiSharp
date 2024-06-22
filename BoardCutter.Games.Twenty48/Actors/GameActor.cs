@@ -1,5 +1,6 @@
 ﻿using Akka.Actor;
 
+using BoardCutter.Core;
 using BoardCutter.Core.Actors.HubWriter;
 using BoardCutter.Core.Players;
 
@@ -7,7 +8,7 @@ using Grid = int[][];
 
 namespace BoardCutter.Games.Twenty48.Actors;
 
-public record PublicVisible(string GameId, int Score, Grid Grid);
+public record PublicVisible(string GameId, int Score, Grid Grid, GameStatus Status);
 
 public class GameActor : ReceiveActor
 {
@@ -16,8 +17,10 @@ public class GameActor : ReceiveActor
     private int _gridSize = 4;
     private Grid _grid = [];
     private int _score;
+    private bool _isGameOver;
     private readonly IActorRef _hubWriterActor;
     private readonly ITilePlacer _tilePlacer;
+    private GameStatus _gameStatus = GameStatus.SettingUp;
 
     public GameActor(Player owner, IActorRef hubWriterActor, ITilePlacer tilePlacer, string? gameId = null)
     {
@@ -33,11 +36,35 @@ public class GameActor : ReceiveActor
         Receive<GameActorMessages.MoveRequest>(MoveRequest);
     }
 
+    private void CreateGameRequest(GameActorMessages.CreateGameRequest message)
+    {
+        Sender.Tell(new GameActorMessages.GameCreated(GetPublicVisibleData()));
+    }
+
+    private void SetupRequest(GameActorMessages.SetupGameRequest message)
+    {
+        if (message.Player.Id != _owner.Id)
+        {
+            // TODO - only the game owner can change 
+            return;
+        }
+
+        _gridSize = message.GridSize;
+
+        BroadCastVisible();
+    }
+
     private void MoveRequest(GameActorMessages.MoveRequest message)
     {
         if (message.Player.Id != _owner.Id)
         {
             // TODO - only game owner can make a move. 
+            return;
+        }
+
+        if (_isGameOver)
+        {
+            // TODO - Probably log a warning, but other than that, do nothing
             return;
         }
 
@@ -52,7 +79,65 @@ public class GameActor : ReceiveActor
 
         _score += scoreIncrement;
 
+        _grid = PlaceNextTile(_grid);
+
+        _isGameOver = IsGameOver(_grid);
+
+        if (_isGameOver)
+        {
+            SetGameStatus(GameStatus.Complete);
+        }
+
         BroadCastVisible();
+    }
+
+    private void SetGameStatus(GameStatus status)
+    {
+        _gameStatus = status;
+        Sender.Tell(new GameActorMessages.GameCreated(GetPublicVisibleData()));
+    }
+
+    public static bool IsGameOver(Grid grid)
+    {
+        for (int y = 0; y < grid.Length; y++)
+        {
+            for (int x = 0; x < grid[y].Length; x++)
+            {
+                var cell = grid[y][x];
+                if (cell == 0)
+                {
+                    return false;
+                }
+
+                // Are there any adjacent cells of the same value?
+
+                // up
+                if (y > 0 && grid[y - 1][x] == cell)
+                {
+                    return false;
+                }
+
+                // down
+                if (y < grid.Length - 1 && grid[y + 1][x] == cell)
+                {
+                    return false;
+                }
+
+                // left
+                if (x > 0 && grid[y][x - 1] == cell)
+                {
+                    return false;
+                }
+
+                // right
+                if (x < grid[y].Length - 1 && grid[y][x + 1] == cell)
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     public static (int[], int) Shunt(int[] input)
@@ -218,28 +303,13 @@ public class GameActor : ReceiveActor
 
         _score = 0;
 
+        SetGameStatus(GameStatus.Running);
         BroadCastVisible();
     }
 
-    private PublicVisible GetPublicVisibleData() => new(_gameId, _score, _grid);
+    private PublicVisible GetPublicVisibleData() => new(_gameId, _score, _grid, _gameStatus);
 
     private void BroadCastVisible() => _hubWriterActor.Tell(new HubWriterActorMessages.WriteClientObject(_owner,
         Server2048Messages.PublicVisible.ToString(),
         GetPublicVisibleData()));
-
-    private void CreateGameRequest(GameActorMessages.CreateGameRequest message)
-    {
-        Sender.Tell(new GameActorMessages.GameCreated(GetPublicVisibleData()));
-    }
-
-    private void SetupRequest(GameActorMessages.SetupGameRequest message)
-    {
-        if (message.Player.Id != _owner.Id)
-        {
-            // TODO - only the game owner can change 
-            return;
-        }
-
-        _gridSize = message.GridSize;
-    }
 }
