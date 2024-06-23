@@ -1,8 +1,7 @@
 using Akka.Actor;
 using Akka.TestKit.Xunit2;
 
-using BoardCutter.Core.Actors.HubWriter;
-using BoardCutter.Games.SushiGo.Actors.Game;
+using BoardCutter.Core.Actors;
 using BoardCutter.Games.SushiGo.Scoring;
 using BoardCutter.Games.SushiGo.Shufflers;
 using static BoardCutter.Core.Tests.TestDataSetup;
@@ -15,7 +14,7 @@ public class GameActorValidations : TestKit
     private readonly TimeSpan _noMsgTimeout = TimeSpan.FromMilliseconds(100);
     
     [Fact]
-    public void GameActor_DoesNotExceedMaxPlayers()
+    public async void GameActor_DoesNotExceedMaxPlayers()
     {
         var writerProbe = CreateTestProbe();
 
@@ -29,31 +28,31 @@ public class GameActorValidations : TestKit
 
         var gameActor = Sys.ActorOf(gameActorProps, "gameActor");
 
-        gameActor.Tell(new GameActorMessages.CreateGameRequest(creatorPlayer, gameId));
+        var resp = await gameActor.Ask(new GameManagerMessages.CreateGameSpecificRequest(creatorPlayer, gameId), _noMsgTimeout) as GameManagerNotifications.GameCreated;
 
-        var msg = ExpectMsg<GameActorMessages.GameCreated>();
+        Assert.NotNull(resp);
         
-        writerProbe.ExpectMsg<HubWriterActorMessages.WriteClientObject>();
+        writerProbe.ExpectMsg<HubWriterMessages.WriteClientObject>(_noMsgTimeout);
 
         // Adding the first guest, should be fine
-        gameActor.Tell(new GameActorMessages.JoinGameRequest(guestOne, gameId));
+        gameActor.Tell(new GameManagerMessages.JoinGameRequest(guestOne, gameId));
 
-        ExpectMsg<GameActorMessages.GameUpdated>();
+        ExpectMsg<GameManagerNotifications.GameUpdated>();
         // Both clients should get public gate state
-        writerProbe.ExpectMsg<HubWriterActorMessages.WriteClientObject>();
-        writerProbe.ExpectMsg<HubWriterActorMessages.WriteClientObject>();
+        writerProbe.ExpectMsg<HubWriterMessages.WriteClientObject>(_noMsgTimeout);
+        writerProbe.ExpectMsg<HubWriterMessages.WriteClientObject>(_noMsgTimeout);
 
         // Adding the second guest should trip the max player validation 
-        gameActor.Tell(new GameActorMessages.JoinGameRequest(guestTwo, gameId));
+        gameActor.Tell(new GameManagerMessages.JoinGameRequest(guestTwo, gameId));
 
         // Should write a message to "guestTwo" that max players has been reached
-        var writeMsg = writerProbe.ExpectMsg<HubWriterActorMessages.WriteClientObject>();
+        var writeMsg = writerProbe.ExpectMsg<HubWriterMessages.WriteClientObject>(_noMsgTimeout);
 
         Assert.Contains("guestTwo", writeMsg.Player.ConnectionId);
         Assert.Equal(ServerMessages.ErrorMessage, writeMsg.Message);
         Assert.Equal(Resources.ResValidationMaxPlayers, writeMsg.Payload.ToString());
         
-        writerProbe.ExpectNoMsg(_noMsgTimeout);
-        ExpectNoMsg(_noMsgTimeout);
+        await writerProbe.ExpectNoMsgAsync(_noMsgTimeout);
+        await ExpectNoMsgAsync(_noMsgTimeout);
     }
 }

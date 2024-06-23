@@ -1,6 +1,7 @@
 using Akka.Actor;
 using Akka.Hosting;
 
+using BoardCutter.Core.Actors;
 using BoardCutter.Core.Actors.HubWriter;
 using BoardCutter.Core.Web.Components.Account;
 using BoardCutter.Core.Web.Shared.Chat;
@@ -16,9 +17,9 @@ using MudBlazor.Services;
 
 using BoardCutter.Games.SushiGo;
 using BoardCutter.Games.SushiGo.Actors.Game;
-using BoardCutter.Games.SushiGo.Actors.GameManager;
 using BoardCutter.Games.SushiGo.Scoring;
 using BoardCutter.Games.SushiGo.Shufflers;
+using BoardCutter.Games.Twenty48;
 using BoardCutter.Web.Components;
 using BoardCutter.Web.Components.Account;
 using BoardCutter.Web.Hubs;
@@ -34,13 +35,6 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
-
-builder.Services.AddSingleton<IScorer, DumplingScorer>();
-builder.Services.AddSingleton<IScorer, MakiRollScorer>();
-builder.Services.AddSingleton<IScorer, TempuraScorer>();
-builder.Services.AddSingleton<IScorer, SashimiScorer>();
-builder.Services.AddSingleton<IScorer, NagiriScorer>();
-builder.Services.AddSingleton<IScorer, PuddingScorer>();
 
 builder.Services.AddSingleton<IPlayerService, MemoryPlayerService>();
 //builder.Services.AddResponseCompression(opts =>
@@ -64,29 +58,43 @@ builder.Services.AddAkka("MyActorSystem", configurationBuilder =>
                 { CardType.Tempura, new TempuraScorer() },
             };
 
-            var hubWriteActor =
+            var sushiHubWriter =
                 system.ActorOf(
                     Props.Create(() =>
-                        new HubClientWriterActor<LobbyHub>(
-                            resolver.GetService<IHubContext<LobbyHub>>(),
+                        new HubClientWriter<SushiHub>(
+                            resolver.GetService<IHubContext<SushiHub>>(),
                             resolver.GetService<IPlayerService>())),
-                    "LobbyHubWrite");
+                    "SushiHubWriter");
+            
+            
+            var twenty48HubWriter =
+                system.ActorOf(
+                    Props.Create(() =>
+                        new HubClientWriter<Twenty48Hub>(
+                            resolver.GetService<IHubContext<Twenty48Hub>>(),
+                            resolver.GetService<IPlayerService>())),
+                    "2048HubWriter");
 
             var gameActors = new Dictionary<string, Props>
             {
                 {
                     "SushiGo",
-                    Props.Create(() => new GameActor(resolver.GetService<ICardShuffler>(), scorers, hubWriteActor))
+                    Props.Create(() => new GameActor(resolver.GetService<ICardShuffler>(), scorers, sushiHubWriter))
+                },
+                {
+                    "2048",
+                    
+                    Props.Create(() =>  new BoardCutter.Games.Twenty48.Actors.GameActor(twenty48HubWriter, new RandomTilePlacer()))
                 }
             };
+            
             var gameManagerActor =
                 system.ActorOf(
                     Props.Create(
-                        () => new GameManagerActor(gameActors, hubWriteActor)),
+                        () => new GameManager(gameActors)),
                     "GameManagerActor");
 
-
-            registry.Register<GameManagerActor>(gameManagerActor);
+            registry.Register<GameManager>(gameManagerActor);
         });
 });
 
@@ -143,6 +151,7 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 app.MapHub<LobbyHub>("/lobbyhub");
+app.MapHub<Twenty48Hub>("/2048hub");
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();

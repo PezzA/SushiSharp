@@ -4,5 +4,6 @@ public enum GameStatus
 {
     SettingUp,
     Running,
-    Complete,
+    Results,
+    Complete
 }

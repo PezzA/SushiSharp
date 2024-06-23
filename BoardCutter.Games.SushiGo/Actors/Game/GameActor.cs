@@ -1,6 +1,7 @@
 ﻿using Akka.Actor;
 
-using BoardCutter.Core.Actors.HubWriter;
+using BoardCutter.Core;
+using BoardCutter.Core.Actors;
 using BoardCutter.Core.Exceptions;
 using BoardCutter.Games.SushiGo.Decks;
 using BoardCutter.Games.SushiGo.Models;
@@ -69,6 +70,10 @@ public class GameActor : ReceiveActor
     /// </summary>
     private int _round = 1;
 
+    private string _gameTitle = string.Empty;
+
+    private string _gameTag = "SushiGo";
+
     /// <summary>
     /// Current interval view of players hand and board state.
     /// </summary>
@@ -84,30 +89,23 @@ public class GameActor : ReceiveActor
 
     private readonly Dictionary<string, int> _finalScores = [];
 
+    private GameManagerNotifications.BaseGameNotification GetBaseDetails() => new(_gameId, _gameTitle, _gameTag, _status);
+
     public GameActor(ICardShuffler cardShuffler, Dictionary<CardType, IScorer> scorers, IActorRef clientWriterActor)
     {
         _cardShuffler = cardShuffler;
         _scorers = scorers;
         _hubWriterActor = clientWriterActor;
 
+        Receive<GameManagerMessages.CreateGameSpecificRequest>(CreateGame);
+        Receive<GameManagerMessages.JoinGameRequest>(JoinGame);
+        
         Receive<GameActorMessages.StartGameRequest>(StartGame);
-        Receive<GameActorMessages.CreateGameRequest>(CreateGame);
-        Receive<GameActorMessages.JoinGameRequest>(JoinGame);
         Receive<GameActorMessages.GamePlayRequest>(GamePlay);
         Receive<GameActorMessages.LeaveGameRequest>(LeaveGame);
-        Receive<GameActorMessages.ConnectGameRequest>(ConnectGame);
     }
 
-    private void ConnectGame(GameActorMessages.ConnectGameRequest message)
-    {
-        if (_status == GameStatus.SettingUp)
-        {
-            _hubWriterActor.Tell(new HubWriterActorMessages.WriteClientObject(message.Player,
-                ServerMessages.SetPlayerGame, GetPublicVisibleData()));
-        }
-    }
-
-    private void CreateGame(GameActorMessages.CreateGameRequest message)
+    private void CreateGame(GameManagerMessages.CreateGameSpecificRequest message)
     {
         _creator = message.Player;
         _players = [message.Player];
@@ -119,9 +117,10 @@ public class GameActor : ReceiveActor
 
         var publicVisibleData = GetPublicVisibleData();
 
-        Sender.Tell(new GameActorMessages.GameCreated(publicVisibleData));
+        
+        Sender.Tell(new GameManagerNotifications.GameCreated(GetBaseDetails()));
 
-        _hubWriterActor.Tell(new HubWriterActorMessages.WriteClientObject(
+        _hubWriterActor.Tell(new HubWriterMessages.WriteClientObject(
             _creator,
             ServerMessages.SetPlayerGame,
             publicVisibleData));
@@ -146,14 +145,14 @@ public class GameActor : ReceiveActor
 
         _players.RemoveAt(playerIndex);
 
-        _hubWriterActor.Tell(new HubWriterActorMessages.WriteClientObject(message.Player,
+        _hubWriterActor.Tell(new HubWriterMessages.WriteClientObject(message.Player,
             ServerMessages.SetPlayerGame, string.Empty));
 
         if ((message.Player.Id == _creator?.Id && _status == GameStatus.SettingUp) || _players.Count == 0)
         {
             foreach (var player in _players)
             {
-                _hubWriterActor.Tell(new HubWriterActorMessages.WriteClientObject(player,
+                _hubWriterActor.Tell(new HubWriterMessages.WriteClientObject(player,
                     ServerMessages.SetPlayerGame, string.Empty));
             }
 
@@ -314,13 +313,13 @@ public class GameActor : ReceiveActor
 
     private void SendError(Player player, string message)
     {
-        _hubWriterActor.Tell(new HubWriterActorMessages.WriteClientObject(
+        _hubWriterActor.Tell(new HubWriterMessages.WriteClientObject(
             player,
             ServerMessages.ErrorMessage,
             message));
     }
 
-    private void JoinGame(GameActorMessages.JoinGameRequest message)
+    private void JoinGame(GameManagerMessages.JoinGameRequest message)
     {
         if (_players.Count >= _parameters.MaxPlayers)
         {
@@ -338,7 +337,7 @@ public class GameActor : ReceiveActor
 
         BroadcastPublicVisibleData();
 
-        Sender.Tell(new GameActorMessages.GameUpdated(GetPublicVisibleData()));
+        Sender.Tell(new GameManagerNotifications.GameUpdated(GetBaseDetails()));
     }
 
     private void DealCards()
@@ -369,7 +368,7 @@ public class GameActor : ReceiveActor
 
         foreach (var player in _players)
         {
-            _hubWriterActor.Tell(new HubWriterActorMessages.WriteClientObject(
+            _hubWriterActor.Tell(new HubWriterMessages.WriteClientObject(
                 player,
                 ServerMessages.SetPlayerTurnStatus,
                 statusList));
@@ -380,7 +379,7 @@ public class GameActor : ReceiveActor
     {
         foreach (var player in _players)
         {
-            _hubWriterActor.Tell(new HubWriterActorMessages.WriteClientObject(
+            _hubWriterActor.Tell(new HubWriterMessages.WriteClientObject(
                 player,
                 ServerMessages.SetPlayerVisibleData,
                 GetPlayerVisibleData(player.Id)));
@@ -399,7 +398,7 @@ public class GameActor : ReceiveActor
     {
         foreach (var player in _players)
         {
-            _hubWriterActor.Tell(new HubWriterActorMessages.WriteClientObject(player,
+            _hubWriterActor.Tell(new HubWriterMessages.WriteClientObject(player,
                 ServerMessages.SetViewerVisibleData, GetViewerVisibleData()));
         }
     }
@@ -408,7 +407,7 @@ public class GameActor : ReceiveActor
     {
         foreach (var player in _players)
         {
-            _hubWriterActor.Tell(new HubWriterActorMessages.WriteClientObject(player, ServerMessages.SetPlayerGame,
+            _hubWriterActor.Tell(new HubWriterMessages.WriteClientObject(player, ServerMessages.SetPlayerGame,
                 GetPublicVisibleData()));
         }
     }
@@ -437,10 +436,10 @@ public class GameActor : ReceiveActor
         };
 
     private void NotifyGameChanged() =>
-        Context.Parent.Tell(new GameActorMessages.GameUpdated(GetPublicVisibleData()));
+        Context.Parent.Tell(new GameManagerNotifications.GameUpdated(GetBaseDetails()));
 
     private void NotifyGameEnded() =>
-        Context.Parent.Tell(new GameActorMessages.GameEnded(_gameId));
+        Context.Parent.Tell(new GameManagerNotifications.GameEnded(GetBaseDetails()));
 
     private void SetGameStatus(GameStatus status)
     {

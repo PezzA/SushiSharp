@@ -36,6 +36,7 @@
       <ProjectReference Include="..\BoardCutter.Core.Data\BoardCutter.Core.Data.csproj" />
       <ProjectReference Include="..\BoardCutter.Games.SushiGo.Web\BoardCutter.Games.SushiGo.Web.csproj" />
       <ProjectReference Include="..\BoardCutter.Games.SushiGo\BoardCutter.Games.SushiGo.csproj" />
+      <ProjectReference Include="..\BoardCutter.Games.Twenty48\BoardCutter.Games.Twenty48.csproj" />
     </ItemGroup>
 
     <ItemGroup>

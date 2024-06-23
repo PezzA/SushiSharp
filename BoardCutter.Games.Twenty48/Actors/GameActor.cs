@@ -1,7 +1,9 @@
 ﻿using Akka.Actor;
 
 using BoardCutter.Core;
+using BoardCutter.Core.Actors;
 using BoardCutter.Core.Actors.HubWriter;
+using BoardCutter.Core.Exceptions;
 using BoardCutter.Core.Players;
 
 using Grid = int[][];
@@ -12,8 +14,8 @@ public record PublicVisible(string GameId, int Score, Grid Grid, GameStatus Stat
 
 public class GameActor : ReceiveActor
 {
-    private readonly Player _owner;
-    private readonly string _gameId;
+    private Player? _owner;
+    private string _gameId = Guid.NewGuid().ToString();
     private int _gridSize = 4;
     private Grid _grid = [];
     private int _score;
@@ -22,24 +24,43 @@ public class GameActor : ReceiveActor
     private readonly ITilePlacer _tilePlacer;
     private GameStatus _gameStatus = GameStatus.SettingUp;
 
-    public GameActor(Player owner, IActorRef hubWriterActor, ITilePlacer tilePlacer, string? gameId = null)
+    public GameActor(IActorRef hubWriterActor, ITilePlacer tilePlacer)
     {
-        _owner = owner;
         _hubWriterActor = hubWriterActor;
         _tilePlacer = tilePlacer;
-        _gameId = gameId ?? Guid.NewGuid().ToString();
         _tilePlacer = tilePlacer;
 
+        // 'Generic' Messages
+        Receive<GameManagerMessages.CreateGameSpecificRequest>(CreateGame);
+        
+        // Game Specific Messages
         Receive<GameMessages.SetupGameRequest>(SetupRequest);
         Receive<GameMessages.StartGameRequest>(StartGameRequest);
         Receive<GameMessages.MoveRequest>(MoveRequest);
     }
-    
+
+    private void CreateGame(GameManagerMessages.CreateGameSpecificRequest message)
+    {
+        _owner = message.Player;
+        _gameId = string.IsNullOrEmpty(message.GameId)
+            ? _gameId
+            : message.GameId;
+
+        SetGameStatus(GameStatus.SettingUp);
+    }
+
     private void SetupRequest(GameMessages.SetupGameRequest message)
     {
+        if (_owner == null)
+        {
+            // todo - throw invalid gamestateexceptionb
+            return;
+        }
+
         if (message.Player.Id != _owner.Id)
         {
-            _hubWriterActor.Tell(new HubWriterActorMessages.WriteClientObject(message.Player, "Error" ,"Only the game creator can setup game properties"));
+            _hubWriterActor.Tell(new HubWriterMessages.WriteClientObject(message.Player, "Error",
+                "Only the game creator can setup game properties"));
             return;
         }
 
@@ -61,9 +82,14 @@ public class GameActor : ReceiveActor
         BroadCastVisible();
     }
 
-
     private void MoveRequest(GameMessages.MoveRequest message)
     {
+        if (_owner == null)
+        {
+            // todo - log warning
+            return;
+        }
+
         if (message.Player.Id != _owner.Id)
         {
             // TODO - only game owner can make a move. 
@@ -102,7 +128,7 @@ public class GameActor : ReceiveActor
     private void SetGameStatus(GameStatus status)
     {
         _gameStatus = status;
-        
+
         Sender.Tell(new GameNotifications.GameUpdated(GetPublicVisibleData()));
     }
 
@@ -225,7 +251,6 @@ public class GameActor : ReceiveActor
         return (grid, increment);
     }
 
-
     public static (Grid, int) ShuntUp(Grid grid)
     {
         int increment = 0;
@@ -303,10 +328,17 @@ public class GameActor : ReceiveActor
         return input;
     }
 
-
     private PublicVisible GetPublicVisibleData() => new(_gameId, _score, _grid, _gameStatus);
 
-    private void BroadCastVisible() => _hubWriterActor.Tell(new HubWriterActorMessages.WriteClientObject(_owner,
-        Server2048Messages.PublicVisible.ToString(),
-        GetPublicVisibleData()));
+    private void BroadCastVisible()
+    {
+        if (_owner == null)
+        {
+            throw new InvalidGameStateException("Game Owner is null");
+        }
+
+        _hubWriterActor.Tell(new HubWriterMessages.WriteClientObject(_owner,
+            Server2048Messages.PublicVisible.ToString(),
+            GetPublicVisibleData()));
+    }
 }

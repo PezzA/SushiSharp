@@ -1,8 +1,8 @@
 ﻿using BoardCutter.Core.Players;
 
-namespace BoardCutter.Core.Actors.HubWriter;
+namespace BoardCutter.Core.Actors;
 
-public abstract class HubWriterActorMessages
+public abstract class HubWriterMessages
 {
     public record WriteClient(string ConnectionId, string Message, string Payload);
     

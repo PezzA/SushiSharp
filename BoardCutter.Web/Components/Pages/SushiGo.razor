@@ -1,6 +1,7 @@
 ﻿@page "/SushiGo/{gameId}"
 @rendermode InteractiveServer
 
+@using BoardCutter.Core
 @using BoardCutter.Games.SushiGo
 @using BoardCutter.Games.SushiGo.Models
 @using BoardCutter.Games.SushiGo.Web.Components.Game.Run
@@ -48,7 +49,7 @@
 }
 else
 {
-    <h2>Waiting ...</h2>
+    <h2> ...</h2>
 }
 
 @code {

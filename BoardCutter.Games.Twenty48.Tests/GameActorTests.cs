@@ -2,7 +2,7 @@
 using Akka.TestKit.Xunit2;
 
 using BoardCutter.Core;
-using BoardCutter.Core.Actors.HubWriter;
+using BoardCutter.Core.Actors;
 using BoardCutter.Games.Twenty48.Actors;
 
 using static BoardCutter.Core.Tests.TestDataSetup;
@@ -24,15 +24,20 @@ public class GameActorValidations : TestKit
         var gameId = "TestGameId";
 
         var gameActorProps = Props.Create(
-            () => new GameActor(creatorPlayer, writerProbe, new PredictableTilePlacer(), gameId));
+            () => new GameActor(writerProbe, new PredictableTilePlacer()));
 
         var gameActor = Sys.ActorOf(gameActorProps, "gameActor");
 
+        var resp = await gameActor.Ask(new GameManagerMessages.CreateGameSpecificRequest(creatorPlayer, gameId), _noMsgTimeout) as GameNotifications.GameUpdated;
+
+        Assert.NotNull(resp);
+        Assert.Equal(gameId, resp.GameData.GameId );
+        Assert.Equal(GameStatus.SettingUp, resp.GameData.Status );
         
         // Game Setup
         gameActor.Tell(new GameMessages.SetupGameRequest(creatorPlayer, 4));
 
-        var setupMsg = writerProbe.ExpectMsg<HubWriterActorMessages.WriteClientObject>();
+        var setupMsg = writerProbe.ExpectMsg<HubWriterMessages.WriteClientObject>(_noMsgTimeout);
         
         Assert.IsType<PublicVisible>(setupMsg.Payload);
 
@@ -43,12 +48,11 @@ public class GameActorValidations : TestKit
         Assert.Equal(gameId, unwrappedSetupMsg.GameId);
         Assert.Equal(0, unwrappedSetupMsg.Score);
         Assert.Equal([], unwrappedSetupMsg.Grid);
-
         
         // Start Game
         gameActor.Tell(new GameMessages.StartGameRequest(creatorPlayer));
         
-        var msg = writerProbe.ExpectMsg<HubWriterActorMessages.WriteClientObject>();
+        var msg = writerProbe.ExpectMsg<HubWriterMessages.WriteClientObject>(_noMsgTimeout);
 
         Assert.IsType<PublicVisible>(msg.Payload);
 
@@ -60,20 +64,19 @@ public class GameActorValidations : TestKit
         Assert.Equal(0, unwrappedMsg.Score);
         Assert.Equal(new int[][] { [2, 2, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0] }, unwrappedMsg.Grid);
         
-        var startNotification = ExpectMsg<GameNotifications.GameUpdated>();
+        var startNotification = ExpectMsg<GameNotifications.GameUpdated>(_noMsgTimeout);
         Assert.Equal(GameStatus.Running, startNotification.GameData.Status);
         
         // Make a move
         gameActor.Tell(new GameMessages.MoveRequest(creatorPlayer, Direction.Right));
 
-        var msg2 = writerProbe.ExpectMsg<HubWriterActorMessages.WriteClientObject>();
+        var msg2 = writerProbe.ExpectMsg<HubWriterMessages.WriteClientObject>(_noMsgTimeout);
 
         Assert.IsType<PublicVisible>(msg2.Payload);
 
         var unwrappedMsg2 = msg2.Payload as PublicVisible;
 
         Assert.NotNull(unwrappedMsg2);
-
         Assert.Equal(gameId, unwrappedMsg2.GameId);
         Assert.Equal(4, unwrappedMsg2.Score);
         Assert.Equal(new int[][] { [2, 0, 0, 4], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0] }, unwrappedMsg2.Grid);
@@ -81,14 +84,13 @@ public class GameActorValidations : TestKit
         // Make another move
         gameActor.Tell(new GameMessages.MoveRequest(creatorPlayer, Direction.Down));
 
-        var msg3 = writerProbe.ExpectMsg<HubWriterActorMessages.WriteClientObject>();
+        var msg3 = writerProbe.ExpectMsg<HubWriterMessages.WriteClientObject>(_noMsgTimeout);
 
         Assert.IsType<PublicVisible>(msg3.Payload);
 
         var unwrappedMsg3 = msg3.Payload as PublicVisible;
 
         Assert.NotNull(unwrappedMsg3);
-
         Assert.Equal(gameId, unwrappedMsg3.GameId);
         Assert.Equal(4, unwrappedMsg3.Score);
         Assert.Equal(new int[][] { [2, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [2, 0, 0, 4] }, unwrappedMsg3.Grid);
